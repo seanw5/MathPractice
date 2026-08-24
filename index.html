@@ -1,0 +1,1301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Grade 6&ndash;7 Math Practice</title>
+<style>
+  :root {
+    --bg: #f4f7fb;
+    --card: #ffffff;
+    --border: #e2e8f2;
+    --text: #1a2332;
+    --dim: #6b7488;
+    --accent: #3d7dfb;
+    --accent-dim: #e9f0ff;
+    --green: #1a9e6b;
+    --green-dim: #e6f7ef;
+    --red: #e0453f;
+    --red-dim: #fdeceb;
+    --amber: #b5750a;
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(20, 30, 60, 0.06), 0 8px 24px rgba(20, 30, 60, 0.05);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  body { padding: 28px 16px 60px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 22px; }
+  header h1 { font-size: 25px; margin: 0 0 4px; letter-spacing: -0.3px; }
+  header p { color: var(--dim); margin: 0; font-size: 14px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 18px;
+  }
+
+  .section-title {
+    font-size: 16px;
+    margin: 0 0 14px;
+    text-align: center;
+  }
+  .grade-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .grade-btn {
+    flex: 1;
+    min-width: 220px;
+    text-align: left;
+    padding: 16px 18px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: all 0.12s;
+  }
+  .grade-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+  .grade-btn .grade-num { font-size: 17px; font-weight: 700; color: var(--text); }
+  .grade-btn .grade-desc { font-size: 13px; color: var(--dim); line-height: 1.4; }
+
+  .grade-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px 12px;
+    font-size: 13.5px;
+    color: var(--dim);
+  }
+
+  .topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .topic-btn {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--dim);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.12s;
+  }
+  .topic-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .topic-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .stats-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+  }
+  .stats {
+    display: flex;
+    gap: 22px;
+  }
+  .stat { text-align: left; }
+  .stat .num { font-size: 19px; font-weight: 700; }
+  .stat .lbl { font-size: 11.5px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat.streak .num { color: var(--accent); }
+  .stat.accuracy .num { color: var(--green); }
+  button.reset-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button.reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .problem-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .topic-tag {
+    display: inline-block;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  .progress-tag {
+    font-size: 12.5px;
+    color: var(--dim);
+    font-weight: 600;
+  }
+
+  .summary-score {
+    font-size: 40px;
+    font-weight: 800;
+    text-align: center;
+    color: var(--accent);
+    margin-top: 10px;
+  }
+  .summary-label {
+    text-align: center;
+    color: var(--dim);
+    font-size: 14.5px;
+    margin: 6px 0 20px;
+  }
+  .summary-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin-bottom: 20px;
+  }
+  .breakdown-stat { text-align: center; }
+  .breakdown-stat .num { font-size: 22px; font-weight: 800; }
+  .breakdown-stat .lbl { font-size: 11.5px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .breakdown-stat.correct-stat .num { color: var(--green); }
+  .breakdown-stat.wrong-stat .num { color: var(--red); }
+  #summaryArea .primary { display: block; margin: 0 auto; }
+
+  .review-heading {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--dim);
+    margin: 28px 0 12px;
+    text-align: center;
+  }
+  .review-list {
+    max-height: 420px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 2px 2px 4px;
+  }
+  .review-item {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .review-item.item-correct { border-left: 4px solid var(--green); }
+  .review-item.item-wrong { border-left: 4px solid var(--red); }
+  .review-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .review-item-num { font-size: 12px; font-weight: 700; color: var(--dim); text-transform: uppercase; letter-spacing: 0.4px; }
+  .review-badge {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .review-badge.correct { background: var(--green-dim); color: var(--green); }
+  .review-badge.wrong { background: var(--red-dim); color: var(--red); }
+  .review-question { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .review-answer-line { font-size: 13.5px; color: var(--dim); margin-bottom: 4px; }
+  .review-answer-line b { color: var(--text); font-weight: 600; }
+  .review-answer-line.wrong-value b { color: var(--red); }
+  .review-answer-line.correct-value b { color: var(--green); }
+  .review-steps {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+    font-size: 13.5px;
+    color: var(--text);
+    opacity: 0.85;
+    line-height: 1.5;
+  }
+  .review-steps .steps-label { font-weight: 700; opacity: 1; margin-right: 4px; }
+
+  .question {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    line-height: 1.4;
+    letter-spacing: -0.2px;
+  }
+  .hint {
+    font-size: 12.5px;
+    color: var(--dim);
+    margin-bottom: 8px;
+  }
+
+  .answer-row {
+    display: flex;
+    gap: 10px;
+  }
+  #answerInput {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    font-size: 17px;
+    font-family: inherit;
+    color: var(--text);
+  }
+  #answerInput:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+  #answerInput:disabled { background: #f7f8fb; color: var(--dim); }
+
+  button.primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 0 22px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary.next { background: var(--green); }
+
+  .feedback {
+    margin-top: 18px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 15px;
+    display: none;
+  }
+  .feedback.correct {
+    display: block;
+    background: var(--green-dim);
+    color: var(--green);
+  }
+  .feedback.incorrect {
+    display: block;
+    background: var(--red-dim);
+    color: var(--red);
+  }
+  .feedback .headline { font-weight: 700; margin-bottom: 6px; }
+  .feedback .solution {
+    color: var(--text);
+    opacity: 0.85;
+    font-size: 14px;
+    line-height: 1.55;
+    font-weight: 400;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--dim);
+    padding: 30px 10px;
+    font-size: 14.5px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Grade 6&ndash;7 Math Practice</h1>
+    <p>Pick a topic and work through problems, one at a time.</p>
+  </header>
+
+  <div class="card" id="gradeGate">
+    <h2 class="section-title">Which grade are you practicing?</h2>
+    <div class="grade-options">
+      <button type="button" class="grade-btn" data-grade="6">
+        <span class="grade-num">Grade 6</span>
+        <span class="grade-desc">Compare integers, whole number × fraction, trapezoids &amp; surface area, whole-number equations</span>
+      </button>
+      <button type="button" class="grade-btn" data-grade="7">
+        <span class="grade-num">Grade 7</span>
+        <span class="grade-desc">Add/subtract integers, negative fractions &amp; decimals, circles &amp; volume, percent change</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="mainArea" style="display:none;">
+    <div class="grade-bar">
+      <span>Practicing <b id="currentGradeLabel"></b></span>
+      <button type="button" class="reset-btn" id="changeGradeBtn">Change grade</button>
+    </div>
+
+    <div class="card">
+      <div class="topics" id="topicButtons"></div>
+    </div>
+
+    <div class="card stats-bar">
+      <div class="stats">
+        <div class="stat">
+          <div class="num" id="scoreNum">0 / 0</div>
+          <div class="lbl">Score</div>
+        </div>
+        <div class="stat streak">
+          <div class="num" id="streakNum">0</div>
+          <div class="lbl">Streak</div>
+        </div>
+        <div class="stat accuracy">
+          <div class="num" id="accuracyNum">&mdash;</div>
+          <div class="lbl">Accuracy</div>
+        </div>
+      </div>
+      <button type="button" class="reset-btn" id="resetBtn">Reset stats</button>
+    </div>
+
+    <div class="card" id="problemCard">
+      <div class="empty-state" id="emptyState">Choose a topic above to start practicing.</div>
+      <div id="problemArea" style="display:none;">
+        <div class="problem-header">
+          <div class="topic-tag" id="topicTag"></div>
+          <div class="progress-tag" id="progressTag"></div>
+        </div>
+        <div class="question" id="questionText"></div>
+        <div class="hint" id="answerHint"></div>
+        <div class="answer-row">
+          <input type="text" id="answerInput" autocomplete="off" placeholder="Your answer" />
+          <button type="button" class="primary" id="actionBtn" disabled>Check</button>
+        </div>
+        <div class="feedback" id="feedback">
+          <div class="headline" id="feedbackHeadline"></div>
+          <div class="solution" id="feedbackSolution"></div>
+        </div>
+      </div>
+      <div id="summaryArea" style="display:none;">
+        <div class="summary-score" id="summaryScore"></div>
+        <div class="summary-label" id="summaryLabel"></div>
+        <div class="summary-breakdown">
+          <div class="breakdown-stat correct-stat">
+            <div class="num" id="summaryCorrectCount"></div>
+            <div class="lbl">Correct</div>
+          </div>
+          <div class="breakdown-stat wrong-stat">
+            <div class="num" id="summaryWrongCount"></div>
+            <div class="lbl">Wrong</div>
+          </div>
+        </div>
+        <button type="button" class="primary" id="practiceAgainBtn">Practice again</button>
+        <div class="review-heading">Review your answers</div>
+        <div class="review-list" id="reviewList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'mathPractice67_stats_v1';
+
+  // ---------- math helpers ----------
+  function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
+  function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a || 1; }
+  function lcm(a, b) { return Math.abs(a * b) / gcd(a, b); }
+  function reduceFrac(n, d) {
+    if (d < 0) { n = -n; d = -d; }
+    const g = gcd(n, d);
+    return { n: n / g, d: d / g };
+  }
+  function fracStr(n, d) {
+    if (d < 0) { n = -n; d = -d; }
+    if (d === 1) return `${n}`;
+    return `${n}/${d}`;
+  }
+  function fmtSigned(n) { return n < 0 ? `(${n})` : `${n}`; }
+  function round2(x) { return Math.round(x * 100) / 100; }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------- topics ----------
+  const TOPICS = [
+    { id: 'mixed', label: 'Mixed' },
+    { id: 'integers', label: 'Integers' },
+    { id: 'fractions', label: 'Fractions' },
+    { id: 'decimals', label: 'Decimals' },
+    { id: 'ratios', label: 'Ratios & Proportions' },
+    { id: 'percentages', label: 'Percentages' },
+    { id: 'orderops', label: 'Order of Operations' },
+    { id: 'equations', label: 'Equations' },
+    { id: 'geometry', label: 'Geometry' },
+  ];
+  const PRACTICE_TOPIC_IDS = TOPICS.filter(t => t.id !== 'mixed').map(t => t.id);
+  const TOPIC_LABEL = Object.fromEntries(TOPICS.map(t => [t.id, t.label]));
+
+  // ---------- generators ----------
+  // Grade 6 (Ontario B1.2/B1.3): read, represent, compare, and order integers — no integer
+  // arithmetic operations are introduced until Grade 7 (add/subtract only, per B2.4; multiplication
+  // and division of integers isn't introduced in elementary at all).
+  function genIntegersGrade6() {
+    if (Math.random() < 0.6) {
+      const a = randInt(-20, 20), b = randInt(-20, 20) + (Math.random() < 0.5 ? 1 : -1);
+      const askGreater = Math.random() < 0.5;
+      const answer = askGreater ? Math.max(a, b) : Math.min(a, b);
+      return {
+        topicId: 'integers',
+        question: `Which is ${askGreater ? 'greater' : 'less'}: ${fmtSigned(a)} or ${fmtSigned(b)}?`,
+        hint: 'Enter the number itself.',
+        answerType: 'number',
+        correct: { value: answer, tolerance: 0 },
+        correctDisplay: `${answer}`,
+        solution: `On a number line, ${askGreater ? 'further right is greater' : 'further left is less'}: ${answer} is ${askGreater ? 'greater' : 'less'} than ${a === answer ? b : a}.`
+      };
+    }
+    const count = 4;
+    const nums = new Set();
+    while (nums.size < count) nums.add(randInt(-20, 20));
+    const list = [...nums];
+    const sorted = [...list].sort((x, y) => x - y);
+    return {
+      topicId: 'integers',
+      question: `Order from least to greatest: ${list.join(', ')}`,
+      hint: 'Enter the numbers separated by commas, e.g. -3, 0, 5.',
+      answerType: 'sequence',
+      correct: { sequence: sorted },
+      correctDisplay: sorted.join(', '),
+      solution: `On a number line, least to greatest means left to right: ${sorted.join(', ')}.`
+    };
+  }
+
+  // Grade 7 (Ontario B2.4): add and subtract integers. Multiplication/division of integers
+  // isn't part of the elementary curriculum.
+  function genIntegersGrade7() {
+    const op = pick(['+', '-']);
+    const a = randInt(-20, 20), b = randInt(-20, 20);
+    const result = op === '+' ? a + b : a - b;
+    const question = `${fmtSigned(a)} ${op} ${fmtSigned(b)}`;
+    return {
+      topicId: 'integers',
+      question: `${question} = ?`,
+      hint: 'Enter a whole number.',
+      answerType: 'number',
+      correct: { value: result, tolerance: 0 },
+      correctDisplay: `${result}`,
+      solution: `${question} = ${result}`
+    };
+  }
+
+  function genIntegers(grade) {
+    return grade === 6 ? genIntegersGrade6() : genIntegersGrade7();
+  }
+
+  function fracAddSub(n1, d1, n2, d2, op) {
+    const L = lcm(d1, d2);
+    const m1 = L / d1, m2 = L / d2;
+    const cn1 = n1 * m1, cn2 = n2 * m2;
+    let rn = op === '+' ? cn1 + cn2 : cn1 - cn2;
+    let rd = L;
+    const r = reduceFrac(rn, rd);
+    const solution = `Common denominator is ${L}: ${fracStr(n1, d1)} = ${fracStr(cn1, L)}, ${fracStr(n2, d2)} = ${fracStr(cn2, L)}. ` +
+      `${cn1} ${op} ${cn2} = ${rn}, so the answer is ${fracStr(cn1, L)} ${op} ${fracStr(cn2, L)} = ${fracStr(r.n, r.d)}.`;
+    return { rn: r.n, rd: r.d, solution };
+  }
+
+  // Grade 6 (Ontario B2.5, B2.9, B2.10): add/subtract fractions with like and unlike
+  // denominators; multiply a whole number by a proper fraction; divide a whole number by a
+  // proper fraction. Fraction-by-fraction multiplication/division is a Grade 7 skill (B2.8).
+  function genFractionsGrade6() {
+    const variant = pick(['addsub', 'addsub', 'mulWhole', 'divWhole']);
+    if (variant === 'addsub') {
+      const op = pick(['+', '-']);
+      const d1 = randInt(2, 10), d2 = randInt(2, 10);
+      const n1 = randInt(1, d1 - 1), n2 = randInt(1, d2 - 1);
+      const { rn, rd, solution } = fracAddSub(n1, d1, n2, d2, op);
+      return {
+        topicId: 'fractions',
+        question: `${fracStr(n1, d1)} ${op} ${fracStr(n2, d2)} = ?`,
+        hint: 'Enter your answer as a fraction, e.g. 3/4 (any equivalent fraction is accepted).',
+        answerType: 'fraction',
+        correct: { n: rn, d: rd },
+        correctDisplay: fracStr(rn, rd),
+        solution
+      };
+    }
+    const whole = randInt(2, 9);
+    const d = randInt(2, 10), n = randInt(1, d - 1);
+    if (variant === 'mulWhole') {
+      const rn = whole * n, rd = d;
+      const r = reduceFrac(rn, rd);
+      return {
+        topicId: 'fractions',
+        question: `${whole} × ${fracStr(n, d)} = ?`,
+        hint: 'Enter your answer as a fraction, e.g. 3/4 (any equivalent fraction is accepted).',
+        answerType: 'fraction',
+        correct: { n: r.n, d: r.d },
+        correctDisplay: fracStr(r.n, r.d),
+        solution: `Multiply the whole number by the numerator: (${whole}×${n})/${d} = ${fracStr(rn, rd)} = ${fracStr(r.n, r.d)}.`
+      };
+    }
+    // divWhole: whole ÷ proper fraction = whole × reciprocal
+    const rn = whole * d, rd = n;
+    const r = reduceFrac(rn, rd);
+    return {
+      topicId: 'fractions',
+      question: `${whole} ÷ ${fracStr(n, d)} = ?`,
+      hint: 'Enter your answer as a fraction, e.g. 3/4 (any equivalent fraction is accepted).',
+      answerType: 'fraction',
+      correct: { n: r.n, d: r.d },
+      correctDisplay: fracStr(r.n, r.d),
+      solution: `Multiply by the reciprocal: ${whole} × ${fracStr(d, n)} = ${fracStr(rn, rd)} = ${fracStr(r.n, r.d)}.`
+    };
+  }
+
+  // Grade 7 (Ontario B1.3, B2.5, B2.8): all four operations between two fractions, including
+  // negative fractions.
+  function genFractionsGrade7() {
+    const op = pick(['+', '-', '×', '÷']);
+    const allowNeg = Math.random() < 0.3;
+    const d1 = randInt(2, 10), d2 = randInt(2, 10);
+    let n1 = randInt(1, d1 - 1) * (allowNeg && Math.random() < 0.5 ? -1 : 1);
+    let n2 = randInt(1, d2 - 1) * (allowNeg && Math.random() < 0.5 ? -1 : 1);
+    let rn, rd, solution;
+
+    if (op === '+' || op === '-') {
+      const r = fracAddSub(n1, d1, n2, d2, op);
+      rn = r.rn; rd = r.rd; solution = r.solution;
+    } else if (op === '×') {
+      rn = n1 * n2; rd = d1 * d2;
+      const r = reduceFrac(rn, rd);
+      solution = `Multiply straight across: (${n1}×${n2}) / (${d1}×${d2}) = ${fracStr(rn, rd)} = ${fracStr(r.n, r.d)}.`;
+      rn = r.n; rd = r.d;
+    } else {
+      rn = n1 * d2; rd = d1 * n2;
+      const r = reduceFrac(rn, rd);
+      solution = `Flip the second fraction and multiply: ${fracStr(n1, d1)} × ${fracStr(d2, n2)} = ${fracStr(n1 * d2, d1 * n2)} = ${fracStr(r.n, r.d)}.`;
+      rn = r.n; rd = r.d;
+    }
+
+    return {
+      topicId: 'fractions',
+      question: `${fracStr(n1, d1)} ${op} ${fracStr(n2, d2)} = ?`,
+      hint: 'Enter your answer as a fraction, e.g. 3/4 (any equivalent fraction is accepted).',
+      answerType: 'fraction',
+      correct: { n: rn, d: rd },
+      correctDisplay: fracStr(rn, rd),
+      solution
+    };
+  }
+
+  function genFractions(grade) {
+    return grade === 6 ? genFractionsGrade6() : genFractionsGrade7();
+  }
+
+  function decAddSub(a, b, op) {
+    const result = round2(op === '+' ? a + b : a - b);
+    const question = `${fmtSigned(a)} ${op} ${fmtSigned(b)}`;
+    return {
+      topicId: 'decimals',
+      question: `${question} = ?`,
+      hint: 'Enter a decimal number.',
+      answerType: 'number',
+      correct: { value: result, tolerance: 0.01 },
+      correctDisplay: `${result}`,
+      solution: `${question} = ${result}`
+    };
+  }
+
+  // Grade 6 (Ontario B2.4, B2.7, B2.8, B2.11): add/subtract decimals; multiply/divide a whole
+  // number by a decimal with one decimal place (tenths); divide a decimal by a whole number.
+  // Decimal-by-decimal multiplication/division is a Grade 7 skill (B2.9).
+  function genDecimalsGrade6() {
+    const variant = pick(['addsub', 'addsub', 'mulTenths', 'divTenths', 'divByWhole']);
+    if (variant === 'addsub') {
+      const a = round2(randInt(10, 200) / 10), b = round2(randInt(10, 200) / 10);
+      return decAddSub(a, b, pick(['+', '-']));
+    }
+    if (variant === 'mulTenths') {
+      const whole = randInt(2, 50), tenths = round2(randInt(1, 99) / 10);
+      const result = round2(whole * tenths);
+      return {
+        topicId: 'decimals', question: `${whole} × ${tenths} = ?`,
+        hint: 'Enter a decimal number.', answerType: 'number',
+        correct: { value: result, tolerance: 0.01 }, correctDisplay: `${result}`,
+        solution: `${whole} × ${tenths} = ${result}.`
+      };
+    }
+    if (variant === 'divTenths') {
+      // pick the tenths divisor first, then a multiple of it that lands on a whole-number dividend
+      let k;
+      do { k = randInt(1, 99); } while (k % 10 === 0);
+      const tenths = round2(k / 10);
+      const need = 10 / gcd(k, 10);
+      const result = need * randInt(1, 6);
+      const whole = Math.round(tenths * result); // guaranteed integer by construction
+      return {
+        topicId: 'decimals', question: `${whole} ÷ ${tenths} = ?`,
+        hint: 'Enter a decimal number.', answerType: 'number',
+        correct: { value: result, tolerance: 0.01 }, correctDisplay: `${result}`,
+        solution: `${whole} ÷ ${tenths} = ${result}.`
+      };
+    }
+    // divByWhole: decimal ÷ whole number (≤10)
+    const whole = randInt(2, 10);
+    const result = round2(randInt(10, 300) / 100);
+    const dividend = round2(whole * result);
+    return {
+      topicId: 'decimals', question: `${dividend} ÷ ${whole} = ?`,
+      hint: 'Enter a decimal number.', answerType: 'number',
+      correct: { value: result, tolerance: 0.01 }, correctDisplay: `${result}`,
+      solution: `${dividend} ÷ ${whole} = ${result}.`
+    };
+  }
+
+  // Grade 7 (Ontario B1.3, B2.9): multiply and divide decimal numbers by decimal numbers,
+  // including negatives.
+  function genDecimalsGrade7() {
+    const op = pick(['+', '-', '×', '÷']);
+    const allowNeg = Math.random() < 0.3;
+    function randDec() {
+      const v = round2(randInt(10, 200) / 10);
+      return allowNeg && Math.random() < 0.5 ? -v : v;
+    }
+    let a, b, result;
+    if (op === '÷') {
+      b = randDec() || 1;
+      result = randDec();
+      a = round2(b * result);
+    } else {
+      a = randDec();
+      b = randDec();
+      if (op === '+') result = round2(a + b);
+      else if (op === '-') result = round2(a - b);
+      else result = round2(a * b);
+    }
+    const question = `${fmtSigned(a)} ${op} ${fmtSigned(b)}`;
+    return {
+      topicId: 'decimals',
+      question: `${question} = ?`,
+      hint: 'Enter a decimal number.',
+      answerType: 'number',
+      correct: { value: result, tolerance: 0.01 },
+      correctDisplay: `${result}`,
+      solution: `${question} = ${result}`
+    };
+  }
+
+  function genDecimals(grade) {
+    return grade === 6 ? genDecimalsGrade6() : genDecimalsGrade7();
+  }
+
+  function genRatios(grade) {
+    if (Math.random() < 0.5) {
+      // simplify a ratio
+      const p = randInt(1, 9), q = randInt(1, 9);
+      const g0 = gcd(p, q);
+      const rp = p / g0, rq = q / g0;
+      const k = randInt(2, 6);
+      const a = rp * k, b = rq * k;
+      return {
+        topicId: 'ratios',
+        question: `Simplify the ratio ${a} : ${b}`,
+        hint: 'Enter your answer as a ratio, e.g. 2:3.',
+        answerType: 'ratio',
+        correct: { n: rp, d: rq },
+        correctDisplay: `${rp}:${rq}`,
+        solution: `The greatest common factor of ${a} and ${b} is ${gcd(a, b)}. Divide both terms: ${a}÷${gcd(a,b)} : ${b}÷${gcd(a,b)} = ${rp}:${rq}.`
+      };
+    } else {
+      // unit rate / proportion
+      const u = randInt(2, 12);
+      const a = randInt(2, 8);
+      const b = randInt(2, 12);
+      const cost = a * u;
+      const answer = b * u;
+      return {
+        topicId: 'ratios',
+        question: `If ${a} items cost $${cost}, how much do ${b} items cost?`,
+        hint: 'Enter a dollar amount (numbers only).',
+        answerType: 'number',
+        correct: { value: answer, tolerance: 0.01 },
+        correctDisplay: `$${answer}`,
+        solution: `Unit price = $${cost} ÷ ${a} = $${u} per item. ${b} items cost ${b} × $${u} = $${answer}.`
+      };
+    }
+  }
+
+  function genPercentages(grade) {
+    const nicePercents = [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 80, 90];
+    const variantPool = grade === 6 ? ['of', 'isWhatPercent'] : ['of', 'isWhatPercent', 'change'];
+    const variant = pick(variantPool);
+    if (variant === 'of') {
+      const pct = pick(nicePercents);
+      const base = randInt(2, 40) * 5;
+      const part = round2(pct / 100 * base);
+      return {
+        topicId: 'percentages',
+        question: `What is ${pct}% of ${base}?`,
+        hint: 'Enter a number.',
+        answerType: 'number',
+        correct: { value: part, tolerance: 0.05 },
+        correctDisplay: `${part}`,
+        solution: `${pct}% of ${base} = (${pct}/100) × ${base} = ${part}.`
+      };
+    } else if (variant === 'isWhatPercent') {
+      const pct = pick(nicePercents);
+      const base = randInt(1, 10) * 20; // multiple of 20 so every percent in nicePercents divides evenly, no rounding
+      const part = pct / 100 * base;
+      return {
+        topicId: 'percentages',
+        question: `${part} is what percent of ${base}?`,
+        hint: 'Enter a number (percent), e.g. 25 for 25%.',
+        answerType: 'number',
+        correct: { value: pct, tolerance: 0.5 },
+        correctDisplay: `${pct}%`,
+        solution: `(${part} ÷ ${base}) × 100 = ${pct}%.`
+      };
+    } else {
+      const pct = pick(nicePercents);
+      const base = randInt(2, 40) * 5;
+      const up = Math.random() < 0.5;
+      const amount = round2(base * (up ? 1 + pct / 100 : 1 - pct / 100));
+      return {
+        topicId: 'percentages',
+        question: `${base} ${up ? 'increased' : 'decreased'} by ${pct}% is?`,
+        hint: 'Enter a number.',
+        answerType: 'number',
+        correct: { value: amount, tolerance: 0.05 },
+        correctDisplay: `${amount}`,
+        solution: `${pct}% of ${base} = ${round2(pct / 100 * base)}. ${base} ${up ? '+' : '−'} ${round2(pct / 100 * base)} = ${amount}.`
+      };
+    }
+  }
+
+  function genOrderOps(grade) {
+    const ops = ['+', '-', '×', '÷'];
+    // build 3 numbers, 2 operators, keep integer-friendly for ÷
+    const nums = [randInt(1, 12), randInt(1, 12), randInt(1, 12)];
+    const opList = [pick(ops), pick(ops)];
+    // if an operator is ÷, make sure it divides evenly by adjusting the number after it
+    if (opList[0] === '÷') nums[1] = pick([1,2,3,4].filter(f => nums[0] % f === 0)) || 1;
+    if (opList[1] === '÷') {
+      const divisors = [1,2,3,4].filter(f => nums[1] % f === 0 && f > 0);
+      nums[2] = pick(divisors.length ? divisors : [1]);
+    }
+
+    // Evaluate with standard precedence, tracking steps
+    // Step 1: resolve all × and ÷ left-to-right into a list of signed terms
+    const terms = [];
+    let sign = 1;
+    let acc = nums[0];
+    const stepsMulDiv = [];
+    for (let i = 0; i < opList.length; i++) {
+      const op = opList[i];
+      const nextNum = nums[i + 1];
+      if (op === '×' || op === '÷') {
+        const before = acc;
+        acc = op === '×' ? acc * nextNum : acc / nextNum;
+        stepsMulDiv.push(`${before} ${op} ${nextNum} = ${acc}`);
+      } else {
+        terms.push({ sign, value: acc });
+        sign = op === '+' ? 1 : -1;
+        acc = nextNum;
+      }
+    }
+    terms.push({ sign, value: acc });
+    const result = terms.reduce((s, t) => s + t.sign * t.value, 0);
+
+    const question = `${nums[0]} ${opList[0]} ${nums[1]} ${opList[1]} ${nums[2]}`;
+    let sumStr = '';
+    terms.forEach((t, idx) => {
+      if (idx === 0) sumStr += (t.sign < 0 ? '-' : '') + t.value;
+      else sumStr += (t.sign < 0 ? ' - ' : ' + ') + t.value;
+    });
+    let solution;
+    if (stepsMulDiv.length > 0) {
+      solution = `Do multiplication/division first (left to right): ${stepsMulDiv.join('; ')}. Then add/subtract: ${sumStr} = ${result}.`;
+    } else {
+      solution = `Add and subtract left to right: ${question} = ${result}.`;
+    }
+
+    return {
+      topicId: 'orderops',
+      question: `${question} = ?`,
+      hint: 'Enter a number.',
+      answerType: 'number',
+      correct: { value: result, tolerance: 0.001 },
+      correctDisplay: `${result}`,
+      solution
+    };
+  }
+
+  // Ontario C2.3: solve equations that involve multiple terms and whole numbers (Grade 6),
+  // or multiple terms, whole numbers, and decimal numbers (Grade 7). Neither grade's algebra
+  // strand introduces negative coefficients or negative solutions — that's Grade 8+.
+  function genEquations(grade) {
+    const useDecimalConst = grade === 7 && Math.random() < 0.35;
+    const form = pick(['oneStepAdd', 'oneStepMul', 'twoStep']);
+    const x = randInt(0, 12);
+    let a, question, solution;
+
+    function pickConstant(base) {
+      const op = pick(['+', '-']);
+      let value;
+      if (op === '+') {
+        value = useDecimalConst ? round2(randInt(1, 150) / 10) : randInt(1, 15);
+      } else {
+        value = useDecimalConst ? round2(randInt(0, base * 10) / 10) : randInt(0, base);
+      }
+      return { op, value };
+    }
+
+    if (form === 'oneStepAdd') {
+      const { op, value } = pickConstant(x);
+      const c = round2(op === '+' ? x + value : x - value);
+      question = `x ${op} ${value} = ${c}`;
+      const inverseWord = op === '+' ? 'Subtract' : 'Add';
+      const prep = op === '+' ? 'from' : 'to';
+      solution = `${inverseWord} ${value} ${prep} both sides: x = ${c} ${op === '+' ? '-' : '+'} ${value} = ${x}.`;
+    } else if (form === 'oneStepMul') {
+      a = randInt(2, 9);
+      const c = a * x;
+      question = `${a}x = ${c}`;
+      solution = `Divide both sides by ${a}: x = ${c} ÷ ${a} = ${x}.`;
+    } else {
+      a = randInt(2, 9);
+      const axTerm = a * x;
+      const { op, value } = pickConstant(axTerm);
+      const c = round2(op === '+' ? axTerm + value : axTerm - value);
+      question = `${a}x ${op} ${value} = ${c}`;
+      const inverseWord = op === '+' ? 'Subtract' : 'Add';
+      const prep = op === '+' ? 'from' : 'to';
+      const afterStep = round2(op === '+' ? c - value : c + value);
+      solution = `${inverseWord} ${value} ${prep} both sides: ${a}x = ${afterStep}. Then divide both sides by ${a}: x = ${afterStep} ÷ ${a} = ${x}.`;
+    }
+    return {
+      topicId: 'equations',
+      question: `Solve for x: ${question}`,
+      hint: 'Enter the value of x.',
+      answerType: 'number',
+      correct: { value: x, tolerance: 0.001 },
+      correctDisplay: `x = ${x}`,
+      solution
+    };
+  }
+
+  // Grade 6 (Ontario E2.4-E2.6): area of trapezoids and composite polygons by decomposition;
+  // surface area of prisms via nets. Basic rectangle/triangle area/perimeter are kept in the
+  // pool as review (prior-grade skills this still exercises). Circles and volume aren't
+  // introduced until Grade 7 (E2.3, E2.5, E2.7), so they're excluded here.
+  //
+  // Grade 7 (Ontario E2.3, E2.5, E2.7): circumference and area of a circle; volume of a prism
+  // or cylinder (base area × height).
+  //
+  // π is used as 3.14 throughout (matching what students are told to use), so the graded
+  // answer always matches a student who follows the stated approximation.
+  function genGeometry(grade) {
+    const shapePool = grade === 6
+      ? ['rect-area', 'rect-perimeter', 'triangle-area', 'trapezoid-area', 'composite-area', 'prism-surface-area']
+      : ['rect-area', 'rect-perimeter', 'triangle-area', 'circle-area', 'circle-circumference', 'prism-volume', 'cylinder-volume'];
+    const shape = pick(shapePool);
+    const PI = 3.14;
+    if (shape === 'rect-area') {
+      const l = randInt(3, 20), w = randInt(3, 20);
+      const area = l * w;
+      return mkGeom('rect-area', `A rectangle is ${l} cm by ${w} cm. What is its area?`,
+        'Enter a number (cm²).', area, 0.01, `${area} cm²`,
+        `Area = length × width = ${l} × ${w} = ${area} cm².`);
+    }
+    if (shape === 'rect-perimeter') {
+      const l = randInt(3, 25), w = randInt(3, 25);
+      const perim = 2 * (l + w);
+      return mkGeom('rect-perimeter', `A rectangle is ${l} cm by ${w} cm. What is its perimeter?`,
+        'Enter a number (cm).', perim, 0.01, `${perim} cm`,
+        `Perimeter = 2 × (length + width) = 2 × (${l} + ${w}) = ${perim} cm.`);
+    }
+    if (shape === 'triangle-area') {
+      const b = randInt(2, 20), h = randInt(2, 20) * 2; // keep b*h even for a clean half
+      const area = round2(0.5 * b * h);
+      return mkGeom('triangle-area', `A triangle has a base of ${b} cm and a height of ${h} cm. What is its area?`,
+        'Enter a number (cm²).', area, 0.01, `${area} cm²`,
+        `Area = ½ × base × height = ½ × ${b} × ${h} = ${area} cm².`);
+    }
+    if (shape === 'trapezoid-area') {
+      const sumParallel = 2 * randInt(3, 20);
+      const a = randInt(2, sumParallel - 2), b = sumParallel - a;
+      const h = randInt(2, 15);
+      const area = (sumParallel / 2) * h;
+      return mkGeom('trapezoid-area', `A trapezoid has parallel sides of ${a} cm and ${b} cm, and a height of ${h} cm. What is its area?`,
+        'Enter a number (cm²).', area, 0.01, `${area} cm²`,
+        `Area = (side₁ + side₂) ÷ 2 × height = (${a} + ${b}) ÷ 2 × ${h} = ${sumParallel / 2} × ${h} = ${area} cm².`);
+    }
+    if (shape === 'composite-area') {
+      const L = randInt(10, 25), W = randInt(10, 25);
+      const l = randInt(2, L - 3), w = randInt(2, W - 3);
+      const area = L * W - l * w;
+      return mkGeom('composite-area', `A rectangle is ${L} cm by ${W} cm. A smaller ${l} cm by ${w} cm rectangle is cut out of one corner. What is the area of the remaining shape?`,
+        'Enter a number (cm²).', area, 0.01, `${area} cm²`,
+        `Decompose: whole rectangle area is ${L} × ${W} = ${L * W} cm². Subtract the cut-out piece, ${l} × ${w} = ${l * w} cm². ${L * W} − ${l * w} = ${area} cm².`);
+    }
+    if (shape === 'prism-surface-area') {
+      const l = randInt(2, 15), w = randInt(2, 15), h = randInt(2, 15);
+      const lw = l * w, lh = l * h, wh = w * h;
+      const sa = 2 * (lw + lh + wh);
+      return mkGeom('prism-surface-area', `A rectangular prism is ${l} cm × ${w} cm × ${h} cm. What is its surface area?`,
+        'Enter a number (cm²).', sa, 0.01, `${sa} cm²`,
+        `Add the areas of the three pairs of faces, then double: 2 × (${l}×${w} + ${l}×${h} + ${w}×${h}) = 2 × (${lw} + ${lh} + ${wh}) = ${sa} cm².`);
+    }
+    if (shape === 'circle-area') {
+      const r = randInt(2, 15);
+      const area = round2(PI * r * r);
+      return mkGeom('circle-area', `A circle has a radius of ${r} cm. What is its area? (use π ≈ 3.14)`,
+        'Enter a number (cm²), rounded to 2 decimals.', area, 0.02, `≈ ${area} cm²`,
+        `Area = π × r² = 3.14 × ${r}² = 3.14 × ${r * r} ≈ ${area} cm².`);
+    }
+    if (shape === 'circle-circumference') {
+      const r = randInt(2, 15);
+      const circ = round2(2 * PI * r);
+      return mkGeom('circle-circumference', `A circle has a radius of ${r} cm. What is its circumference? (use π ≈ 3.14)`,
+        'Enter a number (cm), rounded to 2 decimals.', circ, 0.02, `≈ ${circ} cm`,
+        `Circumference = 2 × π × r = 2 × 3.14 × ${r} ≈ ${circ} cm.`);
+    }
+    if (shape === 'cylinder-volume') {
+      const r = randInt(2, 10), h = randInt(2, 15);
+      const vol = round2(PI * r * r * h);
+      return mkGeom('cylinder-volume', `A cylinder has a radius of ${r} cm and a height of ${h} cm. What is its volume? (use π ≈ 3.14)`,
+        'Enter a number (cm³), rounded to 2 decimals.', vol, 0.02, `≈ ${vol} cm³`,
+        `Volume = π × r² × height = 3.14 × ${r}² × ${h} = 3.14 × ${r * r} × ${h} ≈ ${vol} cm³.`);
+    }
+    // prism-volume
+    const l = randInt(2, 12), w = randInt(2, 12), h = randInt(2, 12);
+    const vol = l * w * h;
+    return mkGeom('prism-volume', `A rectangular prism is ${l} cm × ${w} cm × ${h} cm. What is its volume?`,
+      'Enter a number (cm³).', vol, 0.01, `${vol} cm³`,
+      `Volume = length × width × height = ${l} × ${w} × ${h} = ${vol} cm³.`);
+  }
+  function mkGeom(subId, question, hint, value, tolerance, correctDisplay, solution) {
+    return {
+      topicId: 'geometry',
+      question,
+      hint,
+      answerType: 'number',
+      correct: { value, tolerance },
+      correctDisplay,
+      solution
+    };
+  }
+
+  const GENERATORS = {
+    integers: genIntegers,
+    fractions: genFractions,
+    decimals: genDecimals,
+    ratios: genRatios,
+    percentages: genPercentages,
+    orderops: genOrderOps,
+    equations: genEquations,
+    geometry: genGeometry
+  };
+
+  function generateProblem(topicId, grade) {
+    const actualTopic = topicId === 'mixed' ? pick(PRACTICE_TOPIC_IDS) : topicId;
+    return GENERATORS[actualTopic](grade);
+  }
+
+  // ---------- answer checking ----------
+  function parseFracLike(raw) {
+    const s = raw.trim();
+    const m = s.match(/^(-?\d+)\s*[\/:]\s*(-?\d+)$/);
+    if (m) {
+      let n = parseInt(m[1], 10), d = parseInt(m[2], 10);
+      if (d === 0) return null;
+      if (d < 0) { n = -n; d = -d; }
+      return { n, d };
+    }
+    const mi = s.match(/^-?\d+$/);
+    if (mi) return { n: parseInt(s, 10), d: 1 };
+    return null;
+  }
+
+  function checkAnswer(problem, raw) {
+    if (raw === null || raw === undefined || raw.trim() === '') return false;
+    if (problem.answerType === 'number') {
+      const val = Number(raw.trim().replace(/[$,]/g, ''));
+      if (Number.isNaN(val)) return false;
+      return Math.abs(val - problem.correct.value) <= problem.correct.tolerance + 1e-9;
+    }
+    if (problem.answerType === 'sequence') {
+      const parts = raw.split(',').map(s => s.trim()).filter(s => s !== '');
+      if (parts.length !== problem.correct.sequence.length) return false;
+      const nums = parts.map(Number);
+      if (nums.some(Number.isNaN)) return false;
+      return nums.every((v, i) => v === problem.correct.sequence[i]);
+    }
+    // fraction or ratio
+    const parsed = parseFracLike(raw);
+    if (!parsed) return false;
+    return parsed.n * problem.correct.d === problem.correct.n * parsed.d;
+  }
+
+  // ---------- state ----------
+  const MAX_QUESTIONS_PER_TOPIC = 5;
+  const GRADE_KEY = 'mathPractice67_grade_v1';
+
+  let stats = loadStats() || { correct: 0, total: 0, streak: 0 };
+  let selectedGrade = loadGrade();
+  let currentProblem = null;
+  let answered = false;
+  let session = null; // { topicId, index, correct }
+
+  function loadStats() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (typeof parsed !== 'object' || parsed === null) return null;
+      return { correct: parsed.correct || 0, total: parsed.total || 0, streak: parsed.streak || 0 };
+    } catch (e) {
+      return null;
+    }
+  }
+  function saveStats() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stats)); } catch (e) {}
+  }
+  function loadGrade() {
+    try {
+      const raw = localStorage.getItem(GRADE_KEY);
+      return raw === '6' || raw === '7' ? Number(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function saveGrade() {
+    try { localStorage.setItem(GRADE_KEY, String(selectedGrade)); } catch (e) {}
+  }
+
+  // ---------- DOM ----------
+  const gradeGate = document.getElementById('gradeGate');
+  const mainArea = document.getElementById('mainArea');
+  const currentGradeLabel = document.getElementById('currentGradeLabel');
+  const changeGradeBtn = document.getElementById('changeGradeBtn');
+  const topicButtons = document.getElementById('topicButtons');
+  const scoreNum = document.getElementById('scoreNum');
+  const streakNum = document.getElementById('streakNum');
+  const accuracyNum = document.getElementById('accuracyNum');
+  const resetBtn = document.getElementById('resetBtn');
+  const emptyState = document.getElementById('emptyState');
+  const problemArea = document.getElementById('problemArea');
+  const summaryArea = document.getElementById('summaryArea');
+  const summaryScore = document.getElementById('summaryScore');
+  const summaryLabel = document.getElementById('summaryLabel');
+  const practiceAgainBtn = document.getElementById('practiceAgainBtn');
+  const topicTag = document.getElementById('topicTag');
+  const progressTag = document.getElementById('progressTag');
+  const questionText = document.getElementById('questionText');
+  const answerHint = document.getElementById('answerHint');
+  const answerInput = document.getElementById('answerInput');
+  const actionBtn = document.getElementById('actionBtn');
+  const feedback = document.getElementById('feedback');
+  const feedbackHeadline = document.getElementById('feedbackHeadline');
+  const feedbackSolution = document.getElementById('feedbackSolution');
+
+  document.querySelectorAll('.grade-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedGrade = Number(btn.dataset.grade);
+      saveGrade();
+      enterMainArea();
+    });
+  });
+  changeGradeBtn.addEventListener('click', () => {
+    mainArea.style.display = 'none';
+    gradeGate.style.display = 'block';
+    session = null;
+    currentProblem = null;
+    emptyState.style.display = 'block';
+    problemArea.style.display = 'none';
+    summaryArea.style.display = 'none';
+    topicButtons.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+  });
+
+  function enterMainArea() {
+    gradeGate.style.display = 'none';
+    mainArea.style.display = 'block';
+    currentGradeLabel.textContent = `Grade ${selectedGrade}`;
+  }
+  if (selectedGrade) enterMainArea();
+
+  topicButtons.innerHTML = TOPICS.map(t =>
+    `<button type="button" class="topic-btn" data-topic="${t.id}">${escapeHtml(t.label)}</button>`
+  ).join('');
+  topicButtons.querySelectorAll('.topic-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      topicButtons.querySelectorAll('.topic-btn').forEach(b => b.classList.toggle('active', b === btn));
+      startSession(btn.dataset.topic);
+    });
+  });
+
+  resetBtn.addEventListener('click', () => {
+    stats = { correct: 0, total: 0, streak: 0 };
+    saveStats();
+    renderStats();
+
+    session = null;
+    currentProblem = null;
+    answered = false;
+    topicButtons.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+    problemArea.style.display = 'none';
+    summaryArea.style.display = 'none';
+    emptyState.style.display = 'block';
+  });
+
+  actionBtn.addEventListener('click', () => {
+    if (!answered) {
+      if (answerInput.value.trim() === '') return;
+      submitAnswer();
+    } else {
+      advance();
+    }
+  });
+  answerInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (!answered) {
+        if (answerInput.value.trim() === '') return;
+        submitAnswer();
+      } else {
+        advance();
+      }
+    }
+  });
+  answerInput.addEventListener('input', () => {
+    if (!answered) actionBtn.disabled = answerInput.value.trim() === '';
+  });
+  practiceAgainBtn.addEventListener('click', () => {
+    const topicId = session.topicId;
+    stats = { correct: 0, total: 0, streak: 0 };
+    saveStats();
+    renderStats();
+    startSession(topicId);
+  });
+
+  function renderStats() {
+    scoreNum.textContent = `${stats.correct} / ${stats.total}`;
+    streakNum.textContent = `${stats.streak}`;
+    accuracyNum.textContent = stats.total > 0 ? `${Math.round((stats.correct / stats.total) * 100)}%` : '—';
+  }
+
+  function startSession(topicId) {
+    session = { topicId, index: 0, correct: 0, history: [] };
+    summaryArea.style.display = 'none';
+    advance();
+  }
+
+  function advance() {
+    if (!session) return;
+    if (session.index >= MAX_QUESTIONS_PER_TOPIC) {
+      showSummary();
+      return;
+    }
+    session.index += 1;
+    currentProblem = generateProblem(session.topicId, selectedGrade);
+    answered = false;
+    emptyState.style.display = 'none';
+    problemArea.style.display = 'block';
+    summaryArea.style.display = 'none';
+    topicTag.textContent = TOPIC_LABEL[currentProblem.topicId];
+    progressTag.textContent = `Question ${session.index} of ${MAX_QUESTIONS_PER_TOPIC}`;
+    questionText.textContent = currentProblem.question;
+    answerHint.textContent = currentProblem.hint;
+    answerInput.value = '';
+    answerInput.disabled = false;
+    answerInput.focus();
+    actionBtn.textContent = 'Check';
+    actionBtn.classList.remove('next');
+    actionBtn.disabled = true;
+    feedback.className = 'feedback';
+    feedback.style.display = 'none';
+  }
+
+  function showSummary() {
+    problemArea.style.display = 'none';
+    summaryArea.style.display = 'block';
+    summaryScore.textContent = `${session.correct} / ${MAX_QUESTIONS_PER_TOPIC}`;
+    summaryLabel.textContent = `${TOPIC_LABEL[session.topicId]} — nice work!`;
+
+    const wrongCount = session.history.length - session.correct;
+    document.getElementById('summaryCorrectCount').textContent = session.correct;
+    document.getElementById('summaryWrongCount').textContent = wrongCount;
+
+    const reviewList = document.getElementById('reviewList');
+    reviewList.innerHTML = session.history.map((h, idx) => `
+      <div class="review-item ${h.isCorrect ? 'item-correct' : 'item-wrong'}">
+        <div class="review-item-head">
+          <span class="review-item-num">Question ${idx + 1}${session.topicId === 'mixed' ? ' · ' + escapeHtml(h.topicLabel) : ''}</span>
+          <span class="review-badge ${h.isCorrect ? 'correct' : 'wrong'}">${h.isCorrect ? 'Correct' : 'Wrong'}</span>
+        </div>
+        <div class="review-question">${escapeHtml(h.question)}</div>
+        <div class="review-answer-line ${h.isCorrect ? 'correct-value' : 'wrong-value'}">Your answer: <b>${escapeHtml(h.userAnswer)}</b></div>
+        ${h.isCorrect ? '' : `<div class="review-answer-line correct-value">Correct answer: <b>${escapeHtml(h.correctDisplay)}</b></div>`}
+        <div class="review-steps"><span class="steps-label">Steps:</span>${escapeHtml(h.solution)}</div>
+      </div>
+    `).join('');
+  }
+
+  function submitAnswer() {
+    if (!currentProblem || answered) return;
+    const raw = answerInput.value;
+    const isCorrect = checkAnswer(currentProblem, raw);
+
+    stats.total += 1;
+    if (isCorrect) {
+      stats.correct += 1;
+      stats.streak += 1;
+      session.correct += 1;
+    } else {
+      stats.streak = 0;
+    }
+    saveStats();
+    renderStats();
+
+    session.history.push({
+      question: currentProblem.question,
+      topicLabel: TOPIC_LABEL[currentProblem.topicId],
+      userAnswer: raw,
+      isCorrect,
+      correctDisplay: currentProblem.correctDisplay,
+      solution: currentProblem.solution
+    });
+
+    answered = true;
+    answerInput.disabled = true;
+    actionBtn.disabled = false;
+    actionBtn.textContent = session.index >= MAX_QUESTIONS_PER_TOPIC ? 'See results' : 'Next question';
+    actionBtn.classList.add('next');
+
+    feedback.className = 'feedback ' + (isCorrect ? 'correct' : 'incorrect');
+    feedback.style.display = 'block';
+    feedbackHeadline.textContent = isCorrect
+      ? 'Correct!'
+      : `Not quite — the answer is ${currentProblem.correctDisplay}`;
+    feedbackSolution.textContent = currentProblem.solution;
+
+    actionBtn.focus();
+  }
+
+  renderStats();
+})();
+</script>
+</body>
+</html>
