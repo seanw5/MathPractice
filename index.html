@@ -105,6 +105,30 @@
     border-color: var(--accent);
     color: #fff;
   }
+  .topic-group { margin-top: 14px; }
+  .topic-group:first-child { margin-top: 0; }
+  .topic-group-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 7px;
+  }
+  .topic-group-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .visual {
+    margin: 4px 0 14px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #fbfcfe;
+    overflow-x: auto;
+  }
+  .visual svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  .visual table { border-collapse: collapse; margin: 0 auto; font-size: 14px; }
+  .visual td, .visual th { border: 1px solid var(--border); padding: 5px 12px; text-align: center; }
+  .visual th { background: var(--accent-dim); color: var(--text); font-weight: 700; }
 
   .stats-bar {
     display: flex;
@@ -323,7 +347,7 @@
 <div class="wrap">
   <header>
     <h1>Grade 6&ndash;7 Math Practice</h1>
-    <p>Pick a topic and work through problems, one at a time.</p>
+    <p>Based on the Ontario Mathematics Curriculum (2020). Pick a topic and work through problems, one at a time.</p>
   </header>
 
   <div class="card" id="gradeGate">
@@ -331,11 +355,11 @@
     <div class="grade-options">
       <button type="button" class="grade-btn" data-grade="6">
         <span class="grade-num">Grade 6</span>
-        <span class="grade-desc">Compare integers, whole number × fraction, trapezoids &amp; surface area, whole-number equations</span>
+        <span class="grade-desc">Compare integers, fractions &amp; decimals, divisibility &amp; prime factors, ratios &amp; rates, linear patterns, equations &amp; inequalities, mean/median/mode/range, probability, angles, trapezoids &amp; surface area, coordinates</span>
       </button>
       <button type="button" class="grade-btn" data-grade="7">
         <span class="grade-num">Grade 7</span>
-        <span class="grade-desc">Add/subtract integers, negative fractions &amp; decimals, circles &amp; volume, percent change</span>
+        <span class="grade-desc">Integer add/subtract, fractions &amp; decimals multiply/divide, exponents &amp; GCF/LCM, proportional reasoning, percent change, equations with decimals, dependent events, circles &amp; cylinders, dilations, currency exchange</span>
       </button>
     </div>
   </div>
@@ -376,6 +400,7 @@
           <div class="progress-tag" id="progressTag"></div>
         </div>
         <div class="question" id="questionText"></div>
+        <div class="visual" id="questionVisual" style="display:none;"></div>
         <div class="hint" id="answerHint"></div>
         <div class="answer-row">
           <input type="text" id="answerInput" autocomplete="off" placeholder="Your answer" />
@@ -414,6 +439,11 @@
   // ---------- math helpers ----------
   function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
   function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) { const j = randInt(0, i); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
   function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a || 1; }
   function lcm(a, b) { return Math.abs(a * b) / gcd(a, b); }
   function reduceFrac(n, d) {
@@ -426,628 +456,2607 @@
     if (d === 1) return `${n}`;
     return `${n}/${d}`;
   }
+  function mixedStr(n, d) {
+    if (d === 1) return `${n}`;
+    const neg = n < 0, a = Math.abs(n);
+    const w = Math.floor(a / d), r = a % d;
+    if (w === 0) return fracStr(n, d);
+    const sign = neg ? '-' : '';
+    return r === 0 ? `${sign}${w}` : `${sign}${w} ${r}/${d}`;
+  }
+  function fracDisplay(n, d) {
+    return d > 1 && Math.abs(n) > d ? `${fracStr(n, d)} (or ${mixedStr(n, d)})` : fracStr(n, d);
+  }
   function fmtSigned(n) { return n < 0 ? `(${n})` : `${n}`; }
+  function r6(x) { return Math.round(x * 1e6) / 1e6; }
+  function n2s(x) { return String(r6(x)); }
   function round2(x) { return Math.round(x * 100) / 100; }
+  function money(x) { return '$' + (Math.round(x * 100) / 100).toFixed(2); }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  const SUPDIGITS = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+  function sup(n) { return String(n).split('').map(c => SUPDIGITS[+c]).join(''); }
+  function fmtBig(n) {
+    const s = String(Math.abs(n));
+    const out = s.length >= 5 ? s.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : s;
+    return (n < 0 ? '-' : '') + out;
+  }
+  function plural(n, one, many) { return n === 1 ? one : many; }
+
+  // ---------- units accepted alongside a numeric answer ----------
+  function normUnit(s) {
+    return String(s).toLowerCase().replace(/²/g, '2').replace(/³/g, '3').replace(/[\s.^_·]/g, '');
+  }
+  const UNIT_ALIASES = {
+    mm: ['mm', 'millimetre', 'millimetres', 'millimeter', 'millimeters'],
+    cm: ['cm', 'centimetre', 'centimetres', 'centimeter', 'centimeters'],
+    m: ['m', 'metre', 'metres', 'meter', 'meters'],
+    km: ['km', 'kilometre', 'kilometres', 'kilometer', 'kilometers'],
+    g: ['g', 'gram', 'grams'],
+    kg: ['kg', 'kilogram', 'kilograms'],
+    mL: ['ml', 'millilitre', 'millilitres', 'milliliter', 'milliliters'],
+    L: ['l', 'litre', 'litres', 'liter', 'liters'],
+    cm2: ['cm2', 'sqcm', 'squarecm', 'squarecentimetre', 'squarecentimetres', 'squarecentimeter', 'squarecentimeters'],
+    m2: ['m2', 'sqm', 'squarem', 'squaremetre', 'squaremetres', 'squaremeter', 'squaremeters'],
+    cm3: ['cm3', 'cubiccm', 'cubiccentimetre', 'cubiccentimetres', 'cubiccentimeter', 'cubiccentimeters', 'cc'],
+    m3: ['m3', 'cubicm', 'cubicmetre', 'cubicmetres', 'cubicmeter', 'cubicmeters'],
+    deg: ['°', 'deg', 'degree', 'degrees'],
+    degC: ['°c', 'c', '°', 'degreescelsius', 'degrees', 'degree', 'deg'],
+    dollar: ['$', 'dollar', 'dollars', 'cad'],
+    usd: ['usd', '$', 'dollar', 'dollars', 'us$', 'usdollars'],
+    eur: ['eur', 'euro', 'euros', '€'],
+    kmh: ['km/h', 'kmh', 'km/hr', 'kph', 'kmperhour'],
+    perMin: ['/min', 'permin', 'perminute', 'wpm', 'words/min', 'wordsperminute', 'wordsmin'],
+    weeks: ['week', 'weeks', 'wk', 'wks'],
+    months: ['month', 'months', 'mo'],
+    percent: ['%', 'percent']
+  };
+  function units(...keys) {
+    const out = [];
+    keys.forEach(k => (UNIT_ALIASES[k] || [k]).forEach(u => out.push(normUnit(u))));
+    return out;
+  }
+
+  // ---------- answer parsing ----------
+  function parseNumber(raw, allowedUnits) {
+    const s = String(raw).trim().replace(/[−–]/g, '-').replace(/^[a-zA-Z]\s*=\s*/, '').replace(/^\$\s*/, '');
+    const m = s.match(/^(-?\d[\d,\s ]*(?:\.\d+)?|-?\.\d+)\s*(.*)$/);
+    if (!m) return null;
+    const num = Number(m[1].replace(/[,\s ]/g, ''));
+    if (Number.isNaN(num)) return null;
+    const u = normUnit(m[2]);
+    if (u !== '' && u !== '%' && !(allowedUnits || []).includes(u)) return null;
+    return num;
+  }
+
+  function parseFraction(raw) {
+    const s = String(raw).trim().replace(/[−–]/g, '-');
+    let m = s.match(/^(-?)\s*(\d+)\s+(\d+)\s*\/\s*(\d+)$/);
+    if (m) {
+      const d = +m[4];
+      if (!d) return null;
+      const n = (+m[2]) * d + (+m[3]);
+      return { n: m[1] === '-' ? -n : n, d };
+    }
+    m = s.match(/^(-?\d+)\s*[\/:]\s*(-?\d+)$/);
+    if (m) {
+      let n = +m[1], d = +m[2];
+      if (!d) return null;
+      if (d < 0) { n = -n; d = -d; }
+      return { n, d };
+    }
+    if (/^-?\d+$/.test(s)) return { n: +s, d: 1 };
+    return null;
+  }
+
+  function parseRational(raw) {
+    const s = String(raw).trim().replace(/[−–]/g, '-');
+    const f = parseFraction(s);
+    if (f) return { kind: /[\/:]/.test(s) ? 'frac' : 'int', value: f.n / f.d };
+    const pm = s.match(/^(-?\d*\.?\d+)\s*%$/);
+    if (pm) return { kind: 'pct', value: Number(pm[1]) };
+    if (/^-?(\d+\.?\d*|\.\d+)$/.test(s)) return { kind: 'dec', value: Number(s) };
+    return null;
+  }
+
+  function normText(s) {
+    let t = String(s).toLowerCase();
+    t = t.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, c => '^' + SUPDIGITS.indexOf(c));
+    t = t.replace(/\*\*/g, '^').replace(/[−–]/g, '-');
+    return t.replace(/[\s*×·.'"`]/g, '').replace(/-/g, '');
+  }
+
+  function parseList(raw) {
+    const s = String(raw).trim().replace(/[−–]/g, '-').replace(/[(){}\[\]]/g, '');
+    const parts = s.split(/[\s,;×x*]+/).filter(p => p !== '');
+    const nums = parts.map(Number);
+    return nums.some(Number.isNaN) ? null : nums;
+  }
+
+  function parsePoint(raw) {
+    const s = String(raw).trim().replace(/[−–]/g, '-');
+    const m = s.match(/^\(?\s*(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)\s*\)?$/);
+    return m ? { x: Number(m[1]), y: Number(m[2]) } : null;
+  }
+
+  function checkAnswer(problem, raw) {
+    if (raw === null || raw === undefined || String(raw).trim() === '') return false;
+    const c = problem.correct;
+    switch (problem.answerType) {
+      case 'number': {
+        const v = parseNumber(raw, problem.units);
+        return v !== null && Math.abs(v - c.value) <= c.tolerance + 1e-12;
+      }
+      case 'fraction': {
+        const p = parseFraction(raw);
+        if (!p || p.n * c.d !== c.n * p.d) return false;
+        return !c.requireLowest || gcd(p.n, p.d) === 1;
+      }
+      case 'ratio': {
+        const p = parseFraction(raw);
+        return !!p && /[\/:]/.test(String(raw)) && p.n * c.d === c.n * p.d;
+      }
+      case 'rational': {
+        const p = parseRational(raw);
+        if (!p) return false;
+        if (p.kind === 'pct') return Math.abs(p.value - c.value * 100) <= (c.tolPct === undefined ? 1e-7 : c.tolPct);
+        if (p.kind === 'dec') return Math.abs(p.value - c.value) <= (c.tol === undefined ? 1e-9 : c.tol);
+        return Math.abs(p.value - c.value) <= 1e-9;
+      }
+      case 'sequence': {
+        let got = parseList(raw);
+        if (!got || got.length !== c.sequence.length) return false;
+        let want = c.sequence;
+        if (c.unordered) { got = got.slice().sort((a, b) => a - b); want = want.slice().sort((a, b) => a - b); }
+        return got.every((v, i) => Math.abs(v - want[i]) < 1e-9);
+      }
+      case 'rationalSequence': {
+        const parts = String(raw).split(/[;,]\s*/).filter(p => p.trim() !== '');
+        if (parts.length !== c.values.length) return false;
+        const vals = parts.map(p => parseRational(p));
+        if (vals.some(v => v === null || v.kind === 'pct')) return false;
+        return vals.every((v, i) => Math.abs(v.value - c.values[i]) < 1e-9);
+      }
+      case 'text': {
+        const t = normText(raw);
+        return c.accepted.some(a => normText(a) === t);
+      }
+      case 'point': {
+        const p = parsePoint(raw);
+        return !!p && Math.abs(p.x - c.x) < 1e-9 && Math.abs(p.y - c.y) < 1e-9;
+      }
+    }
+    return false;
+  }
+
+  // ---------- problem builders ----------
+  function makeNum(topicId, question, value, solution, o = {}) {
+    return {
+      topicId, question, visual: o.visual || '',
+      hint: o.hint || 'Enter a number.',
+      answerType: 'number',
+      correct: { value, tolerance: o.tol === undefined ? 1e-6 : o.tol },
+      units: o.units || [],
+      correctDisplay: o.display !== undefined ? o.display : n2s(value),
+      solution
+    };
+  }
+  function makeFrac(topicId, question, n, d, solution, o = {}) {
+    const r = reduceFrac(n, d);
+    return {
+      topicId, question, visual: o.visual || '',
+      hint: o.hint || (o.requireLowest
+        ? 'Enter your answer in lowest terms, e.g. 3/4.'
+        : 'Enter a fraction (e.g. 3/4) or a mixed number (e.g. 1 1/2). Any equivalent fraction is accepted.'),
+      answerType: 'fraction',
+      correct: { n: r.n, d: r.d, requireLowest: !!o.requireLowest },
+      correctDisplay: o.display !== undefined ? o.display : fracDisplay(r.n, r.d),
+      solution
+    };
+  }
+  function makeRatio(topicId, question, a, b, solution, o = {}) {
+    const r = reduceFrac(a, b);
+    return {
+      topicId, question, visual: o.visual || '',
+      hint: o.hint || 'Enter your answer as a ratio in lowest terms, e.g. 2:3.',
+      answerType: 'ratio',
+      correct: { n: r.n, d: r.d },
+      correctDisplay: `${r.n}:${r.d}`,
+      solution
+    };
+  }
+  function makeSeq(topicId, question, arr, solution, o = {}) {
+    return {
+      topicId, question, visual: o.visual || '',
+      hint: o.hint || 'Enter the numbers separated by commas.',
+      answerType: 'sequence',
+      correct: { sequence: arr, unordered: !!o.unordered },
+      correctDisplay: o.display !== undefined ? o.display : arr.join(', '),
+      solution
+    };
+  }
+  function makeRat(topicId, question, value, solution, o = {}) {
+    return {
+      topicId, question, visual: o.visual || '',
+      hint: o.hint || 'Enter a fraction, a decimal, or a percent.',
+      answerType: 'rational',
+      correct: { value, tol: o.tol, tolPct: o.tolPct },
+      correctDisplay: o.display,
+      solution
+    };
+  }
+  function makeRatSeq(topicId, question, values, display, solution, o = {}) {
+    return {
+      topicId, question, visual: o.visual || '',
+      hint: o.hint || 'Enter the numbers separated by commas, exactly as written above (fractions and decimals are both fine).',
+      answerType: 'rationalSequence',
+      correct: { values },
+      correctDisplay: display,
+      solution
+    };
+  }
+  function makeText(topicId, question, accepted, display, solution, o = {}) {
+    return {
+      topicId, question, visual: o.visual || '',
+      hint: o.hint || 'Type your answer.',
+      answerType: 'text',
+      correct: { accepted },
+      correctDisplay: display,
+      solution
+    };
+  }
+  function makePoint(topicId, question, x, y, solution, o = {}) {
+    return {
+      topicId, question, visual: o.visual || '',
+      hint: o.hint || 'Enter an ordered pair, e.g. (3, -2).',
+      answerType: 'point',
+      correct: { x, y },
+      correctDisplay: `(${x}, ${y})`,
+      solution
+    };
+  }
+  const YES_NO_HINT = 'Type yes or no.';
+  function makeYesNo(topicId, question, yes, solution, o = {}) {
+    return makeText(topicId, question, yes ? ['yes', 'y'] : ['no', 'n'], yes ? 'Yes' : 'No', solution, { hint: YES_NO_HINT, visual: o.visual });
+  }
+
+  // ---------- visuals (inline SVG / HTML) ----------
+  const COLORS = ['#4f6df5', '#17a673', '#e5484d', '#f5a623', '#8e5cf7', '#0fb5ba', '#d6409f', '#7a8499'];
+  function niceStep(max, targetLines) {
+    for (const s of [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000]) if (max / s <= (targetLines || 6)) return s;
+    return 1000;
+  }
+  function chartFrame(W, H, L, R, T, B, top, step, title, yTitle) {
+    const plotH = H - T - B;
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">`;
+    s += `<text x="${W / 2}" y="16" text-anchor="middle" font-size="13" font-weight="700" fill="#1a2332">${escapeHtml(title || '')}</text>`;
+    for (let v = 0; v <= top + 1e-9; v += step) {
+      const y = T + plotH - (v / top) * plotH;
+      s += `<line x1="${L}" y1="${y}" x2="${W - R}" y2="${y}" stroke="#e2e8f2" />`;
+      s += `<text x="${L - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="#6b7488">${n2s(v)}</text>`;
+    }
+    if (yTitle) s += `<text transform="translate(12 ${T + plotH / 2}) rotate(-90)" text-anchor="middle" font-size="11" fill="#6b7488">${escapeHtml(yTitle)}</text>`;
+    return s;
+  }
+  function svgBar(labels, values, o = {}) {
+    const W = 360, H = 230, L = 46, R = 12, T = 28, B = 50;
+    const plotW = W - L - R, plotH = H - T - B;
+    const maxV = o.max !== undefined ? o.max : Math.max(...values);
+    const step = o.step || niceStep(maxV, 6);
+    const top = Math.ceil(maxV / step) * step;
+    let s = chartFrame(W, H, L, R, T, B, top, step, o.title, o.yTitle);
+    const n = values.length, slot = plotW / n, bw = o.histogram ? slot : slot * 0.6;
+    values.forEach((v, i) => {
+      const x = L + i * slot + (slot - bw) / 2;
+      const h = (v / top) * plotH;
+      s += `<rect x="${x}" y="${T + plotH - h}" width="${bw}" height="${h}" fill="${COLORS[0]}" stroke="${o.histogram ? '#fff' : 'none'}" />`;
+      s += `<text x="${L + i * slot + slot / 2}" y="${H - B + 16}" text-anchor="middle" font-size="11" fill="#1a2332">${escapeHtml(labels[i])}</text>`;
+    });
+    if (o.xTitle) s += `<text x="${L + plotW / 2}" y="${H - 6}" text-anchor="middle" font-size="11" fill="#6b7488">${escapeHtml(o.xTitle)}</text>`;
+    return s + '</svg>';
+  }
+  function svgLine(labels, values, o = {}) {
+    const W = 360, H = 230, L = 46, R = 16, T = 28, B = 50;
+    const plotW = W - L - R, plotH = H - T - B;
+    const maxV = o.max !== undefined ? o.max : Math.max(...values);
+    const step = o.step || niceStep(maxV, 6);
+    const top = Math.ceil(maxV / step) * step;
+    let s = chartFrame(W, H, L, R, T, B, top, step, o.title, o.yTitle);
+    const n = values.length, slot = plotW / n;
+    const pts = values.map((v, i) => [L + i * slot + slot / 2, T + plotH - (v / top) * plotH]);
+    s += `<polyline points="${pts.map(p => p.join(',')).join(' ')}" fill="none" stroke="${COLORS[0]}" stroke-width="2.5" />`;
+    pts.forEach((p, i) => {
+      s += `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${COLORS[0]}" />`;
+      s += `<text x="${p[0]}" y="${p[1] - 9}" text-anchor="middle" font-size="11" fill="#1a2332">${n2s(values[i])}</text>`;
+      s += `<text x="${p[0]}" y="${H - B + 16}" text-anchor="middle" font-size="11" fill="#1a2332">${escapeHtml(labels[i])}</text>`;
+    });
+    if (o.xTitle) s += `<text x="${L + plotW / 2}" y="${H - 6}" text-anchor="middle" font-size="11" fill="#6b7488">${escapeHtml(o.xTitle)}</text>`;
+    return s + '</svg>';
+  }
+  function svgPie(labels, pcts, o = {}) {
+    const W = 360, H = 210, cx = 100, cy = 118, r = 76;
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" role="img" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">`;
+    s += `<text x="${W / 2}" y="16" text-anchor="middle" font-size="13" font-weight="700" fill="#1a2332">${escapeHtml(o.title || '')}</text>`;
+    let a0 = -Math.PI / 2;
+    pcts.forEach((p, i) => {
+      const a1 = a0 + (p / 100) * 2 * Math.PI;
+      const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
+      const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+      s += `<path d="M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${p > 50 ? 1 : 0} 1 ${x1} ${y1} Z" fill="${COLORS[i % COLORS.length]}" stroke="#fff" stroke-width="1.5" />`;
+      a0 = a1;
+    });
+    labels.forEach((l, i) => {
+      const y = 50 + i * 24;
+      s += `<rect x="215" y="${y - 10}" width="14" height="14" rx="3" fill="${COLORS[i % COLORS.length]}" />`;
+      s += `<text x="236" y="${y + 2}" font-size="13" fill="#1a2332">${escapeHtml(l)}: ${n2s(pcts[i])}%</text>`;
+    });
+    return s + '</svg>';
+  }
+  // Cartesian plane showing labelled points: pts = [{x, y, label}]
+  function svgPlane(pts, o = {}) {
+    const R = o.range || 8, cell = 20, pad = 22, size = R * 2 * cell + pad * 2;
+    const X = v => pad + (v + R) * cell, Y = v => pad + (R - v) * cell;
+    let s = `<svg viewBox="0 0 ${size} ${size}" width="${Math.min(size, 360)}" role="img" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">`;
+    for (let v = -R; v <= R; v++) {
+      s += `<line x1="${X(v)}" y1="${Y(R)}" x2="${X(v)}" y2="${Y(-R)}" stroke="${v === 0 ? '#1a2332' : '#e2e8f2'}" stroke-width="${v === 0 ? 1.8 : 1}" />`;
+      s += `<line x1="${X(-R)}" y1="${Y(v)}" x2="${X(R)}" y2="${Y(v)}" stroke="${v === 0 ? '#1a2332' : '#e2e8f2'}" stroke-width="${v === 0 ? 1.8 : 1}" />`;
+      if (v !== 0 && v % 2 === 0) {
+        s += `<text x="${X(v)}" y="${Y(0) + 13}" text-anchor="middle" font-size="9" fill="#6b7488">${v}</text>`;
+        s += `<text x="${X(0) - 5}" y="${Y(v) + 3}" text-anchor="end" font-size="9" fill="#6b7488">${v}</text>`;
+      }
+    }
+    s += `<text x="${X(R) + 2}" y="${Y(0) - 4}" font-size="11" font-weight="700" fill="#1a2332">x</text>`;
+    s += `<text x="${X(0) + 5}" y="${Y(R) + 10}" font-size="11" font-weight="700" fill="#1a2332">y</text>`;
+    (pts || []).forEach((p, i) => {
+      s += `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="4.5" fill="${COLORS[i % 3 === 0 ? 0 : (i % 3 === 1 ? 2 : 1)]}" />`;
+      s += `<text x="${X(p.x) + 7}" y="${Y(p.y) - 6}" font-size="12" font-weight="700" fill="#1a2332">${escapeHtml(p.label || '')}</text>`;
+    });
+    return s + '</svg>';
+  }
+  function htmlTable(headers, rows) {
+    return '<table><tr>' + headers.map(h => `<th>${escapeHtml(h)}</th>`).join('') + '</tr>' +
+      rows.map(r => '<tr>' + r.map(c => `<td>${escapeHtml(c)}</td>`).join('') + '</tr>').join('') + '</table>';
   }
 
   // ---------- topics ----------
   const TOPICS = [
-    { id: 'mixed', label: 'Mixed' },
-    { id: 'integers', label: 'Integers' },
-    { id: 'fractions', label: 'Fractions' },
-    { id: 'decimals', label: 'Decimals' },
-    { id: 'ratios', label: 'Ratios & Proportions' },
-    { id: 'percentages', label: 'Percentages' },
-    { id: 'orderops', label: 'Order of Operations' },
-    { id: 'equations', label: 'Equations' },
-    { id: 'geometry', label: 'Geometry' },
+    { id: 'mixed', label: 'Mixed', strand: null },
+    { id: 'integers', label: 'Integers', strand: 'Number' },
+    { id: 'numbersense', label: 'Number Sense', strand: 'Number' },
+    { id: 'factors', label: 'Factors & Powers', strand: 'Number' },
+    { id: 'fractions', label: 'Fractions', strand: 'Number' },
+    { id: 'decimals', label: 'Decimals', strand: 'Number' },
+    { id: 'percentages', label: 'Percents', strand: 'Number' },
+    { id: 'ratios', label: 'Ratios & Rates', strand: 'Number' },
+    { id: 'orderops', label: 'Order of Operations', strand: 'Number' },
+    { id: 'patterns', label: 'Patterns', strand: 'Algebra' },
+    { id: 'expressions', label: 'Expressions', strand: 'Algebra' },
+    { id: 'equations', label: 'Equations & Inequalities', strand: 'Algebra' },
+    { id: 'data', label: 'Data', strand: 'Data' },
+    { id: 'probability', label: 'Probability', strand: 'Data' },
+    { id: 'geometry', label: 'Geometry', strand: 'Spatial Sense' },
+    { id: 'coordinates', label: 'Coordinates', strand: 'Spatial Sense' },
+    { id: 'measurement', label: 'Measurement', strand: 'Spatial Sense' },
+    { id: 'financial', label: 'Financial Literacy', strand: 'Financial Literacy' }
   ];
   const PRACTICE_TOPIC_IDS = TOPICS.filter(t => t.id !== 'mixed').map(t => t.id);
   const TOPIC_LABEL = Object.fromEntries(TOPICS.map(t => [t.id, t.label]));
 
-  // ---------- generators ----------
-  // Grade 6 (Ontario B1.2/B1.3): read, represent, compare, and order integers — no integer
-  // arithmetic operations are introduced until Grade 7 (add/subtract only, per B2.4; multiplication
-  // and division of integers isn't introduced in elementary at all).
-  function genIntegersGrade6() {
-    if (Math.random() < 0.6) {
-      const a = randInt(-20, 20), b = randInt(-20, 20) + (Math.random() < 0.5 ? 1 : -1);
-      const askGreater = Math.random() < 0.5;
-      const answer = askGreater ? Math.max(a, b) : Math.min(a, b);
-      return {
-        topicId: 'integers',
-        question: `Which is ${askGreater ? 'greater' : 'less'}: ${fmtSigned(a)} or ${fmtSigned(b)}?`,
-        hint: 'Enter the number itself.',
-        answerType: 'number',
-        correct: { value: answer, tolerance: 0 },
-        correctDisplay: `${answer}`,
-        solution: `On a number line, ${askGreater ? 'further right is greater' : 'further left is less'}: ${answer} is ${askGreater ? 'greater' : 'less'} than ${a === answer ? b : a}.`
-      };
-    }
-    const count = 4;
+  const GENERATORS = {};
+
+  function ordinal(n) {
+    const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+  const NAMES = ['Maya', 'Liam', 'Aisha', 'Noah', 'Priya', 'Ethan', 'Sofia', 'Omar', 'Chloe', 'Daniel'];
+
+  // =====================================================================
+  // NUMBER: integers  (Gr 6: B1.2, B1.3 read/compare/order integers;
+  //                    Gr 7: B2.4 add and subtract integers)
+  // =====================================================================
+  function intsCompare() {
+    const a = randInt(-20, 20);
+    let b = randInt(-20, 20);
+    while (b === a) b = randInt(-20, 20);
+    const greater = Math.random() < 0.5;
+    const ans = greater ? Math.max(a, b) : Math.min(a, b);
+    return makeNum('integers', `Which is ${greater ? 'greater' : 'less'}: ${fmtSigned(a)} or ${fmtSigned(b)}?`, ans,
+      `On a number line, ${greater ? 'the number further right is greater' : 'the number further left is less'}: ${ans}.`,
+      { hint: 'Enter the number itself.' });
+  }
+  function intsOrder() {
     const nums = new Set();
-    while (nums.size < count) nums.add(randInt(-20, 20));
-    const list = [...nums];
+    while (nums.size < 4) nums.add(randInt(-20, 20));
+    const list = shuffle([...nums]);
     const sorted = [...list].sort((x, y) => x - y);
-    return {
-      topicId: 'integers',
-      question: `Order from least to greatest: ${list.join(', ')}`,
-      hint: 'Enter the numbers separated by commas, e.g. -3, 0, 5.',
-      answerType: 'sequence',
-      correct: { sequence: sorted },
-      correctDisplay: sorted.join(', '),
-      solution: `On a number line, least to greatest means left to right: ${sorted.join(', ')}.`
-    };
+    return makeSeq('integers', `Order from least to greatest: ${list.join(', ')}`, sorted,
+      `On a number line, least to greatest means left to right: ${sorted.join(', ')}.`,
+      { hint: 'Enter the numbers separated by commas, e.g. -3, 0, 5.' });
   }
-
-  // Grade 7 (Ontario B2.4): add and subtract integers. Multiplication/division of integers
-  // isn't part of the elementary curriculum.
-  function genIntegersGrade7() {
+  function intsOpposite() {
+    const n = randInt(1, 20) * (Math.random() < 0.5 ? -1 : 1);
+    return makeNum('integers', `What is the opposite of ${fmtSigned(n)}?`, -n,
+      `Opposite integers are the same distance from zero on opposite sides of zero: the opposite of ${n} is ${-n}.`);
+  }
+  function intsAbs() {
+    const n = randInt(1, 25) * (Math.random() < 0.5 ? -1 : 1);
+    return makeNum('integers', `What is the absolute value of ${fmtSigned(n)}?`, Math.abs(n),
+      `Absolute value is the distance from zero on the number line. ${n} is ${Math.abs(n)} units from zero.`);
+  }
+  function intsFreezing() {
+    const t = -randInt(1, 25);
+    return makeNum('integers', `The temperature is ${t}°C. How many degrees below freezing (0°C) is that?`, -t,
+      `${t}°C is ${-t} degrees below 0°C.`, { units: units('degC', 'deg') });
+  }
+  function signedStyle(n) { return n < 0 ? `(-${-n})` : `(+${n})`; }
+  function intsAddSub7() {
+    const a = randInt(-15, 15), b = randInt(-15, 15);
     const op = pick(['+', '-']);
-    const a = randInt(-20, 20), b = randInt(-20, 20);
+    const style = Math.random() < 0.5 ? signedStyle : fmtSigned;
     const result = op === '+' ? a + b : a - b;
-    const question = `${fmtSigned(a)} ${op} ${fmtSigned(b)}`;
-    return {
-      topicId: 'integers',
-      question: `${question} = ?`,
-      hint: 'Enter a whole number.',
-      answerType: 'number',
-      correct: { value: result, tolerance: 0 },
-      correctDisplay: `${result}`,
-      solution: `${question} = ${result}`
-    };
+    const q = `${style(a)} ${op} ${style(b)}`;
+    const steps = op === '+'
+      ? `${a} + ${fmtSigned(b)} = ${result}`
+      : `Subtracting is the same as adding the opposite: ${a} + ${fmtSigned(-b)} = ${result}`;
+    return makeNum('integers', `${q} = ?`, result, steps, { hint: 'Enter an integer.' });
+  }
+  function intsContext7() {
+    const t = randInt(1, 4);
+    if (t === 1) {
+      const t0 = randInt(-15, 3), r = randInt(3, 20);
+      return makeNum('integers', `At 6 a.m. the temperature was ${t0}°C. By noon it had risen ${r}°C. What was the temperature at noon?`, t0 + r,
+        `Rising is adding: ${fmtSigned(t0)} + ${r} = ${t0 + r}°C.`, { units: units('degC', 'deg') });
+    }
+    if (t === 2) {
+      const t0 = randInt(-5, 12), d = randInt(5, 25);
+      return makeNum('integers', `At noon the temperature was ${t0}°C. By midnight it had dropped ${d}°C. What was the temperature at midnight?`, t0 - d,
+        `Dropping is subtracting: ${fmtSigned(t0)} − ${d} = ${t0 - d}°C.`, { units: units('degC', 'deg') });
+    }
+    if (t === 3) {
+      const start = -randInt(1, 4), down = randInt(1, 3), up = randInt(2, 6);
+      return makeNum('integers', `An underground parking garage has levels labelled with negative numbers. A car is on level ${start}. It goes down ${down} more ${plural(down, 'level', 'levels')} and then up ${up} ${plural(up, 'level', 'levels')}. Which level is it on now?`, start - down + up,
+        `${start} − ${down} + ${up} = ${start - down + up}.`, { hint: 'Enter an integer.' });
+    }
+    const bal = -randInt(5, 30), dep = randInt(10, 50), nm = pick(NAMES);
+    return makeNum('integers', `${nm}'s account balance is -$${-bal}, which means ${nm} owes $${-bal}. A deposit of $${dep} is made. What is the new balance in dollars?`, bal + dep,
+      `${bal} + ${dep} = ${bal + dep}.`, { units: units('dollar'), hint: 'Enter a number of dollars (negative if still owing).' });
+  }
+  GENERATORS.integers = {
+    6: [intsCompare, intsCompare, intsOrder, intsOpposite, intsAbs, intsFreezing],
+    7: [intsAddSub7, intsAddSub7, intsAddSub7, intsContext7]
+  };
+
+  // =====================================================================
+  // NUMBER: number sense  (Gr 6: B1.1, B1.3-B1.6; Gr 7: B1.1-B1.7, B2.2)
+  // =====================================================================
+  const PLACE_NAMES = ['whole number', 'tenth', 'hundredth'];
+  function roundDecimal() {
+    const target = randInt(0, 2);
+    const td = target === 2 ? 3 : randInt(target + 1, 3);
+    const whole = randInt(0, 99);
+    const F = randInt(0, Math.pow(10, td) - 1);
+    const scale = Math.pow(10, td);
+    const N = whole * scale + F;
+    const div = Math.pow(10, td - target);
+    let q = Math.floor(N / div);
+    const r = N % div;
+    const digit = Math.floor((r * 10) / div);
+    if (2 * r >= div) q += 1;
+    const result = q / Math.pow(10, target);
+    const x = (N / scale).toFixed(td);
+    return makeNum('numbersense', `Round ${x} to the nearest ${PLACE_NAMES[target]}.`, result,
+      `Look at the digit just to the right of the ${PLACE_NAMES[target]} place: it is ${digit}. ${digit >= 5 ? 'Since it is 5 or more, round up' : 'Since it is less than 5, round down'}: ${result.toFixed(target)}.`,
+      { display: result.toFixed(target), tol: 1e-9, hint: 'Enter the rounded number.' });
+  }
+  function roundRepeating6() {
+    const d = pick([3, 6, 7, 9, 11]);
+    let n = randInt(1, d - 1);
+    if (d === 6 && n === 3) n = pick([1, 2, 4, 5]);
+    const target = pick([1, 2]);
+    const v = n / d;
+    const result = Math.round(v * Math.pow(10, target)) / Math.pow(10, target);
+    return makeNum('numbersense', `Write ${n}/${d} as a decimal and round it to the nearest ${PLACE_NAMES[target]}.`, result,
+      `${n} ÷ ${d} = ${v.toFixed(6)}… (repeating). Rounded to the nearest ${PLACE_NAMES[target]}: ${result.toFixed(target)}.`,
+      { display: result.toFixed(target), tol: 1e-9 });
+  }
+  function compareDecimals6() {
+    const w = randInt(0, 9);
+    const a = w + randInt(100, 999) / 1000;
+    const delta = pick([0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1]);
+    const b = r6(a + (Math.random() < 0.5 ? delta : -delta));
+    if (b <= w) return compareDecimals6();
+    const greater = Math.random() < 0.5;
+    const ans = greater ? Math.max(a, b) : Math.min(a, b);
+    return makeNum('numbersense', `Which is ${greater ? 'greater' : 'less'}: ${a.toFixed(3)} or ${n2s(b)}?`, ans,
+      `Compare place by place from the left. The first place where they differ decides it: ${n2s(ans)} is ${greater ? 'greater' : 'less'}.`,
+      { tol: 1e-9, hint: 'Enter the number itself.' });
+  }
+  function randFracRep(allowImproper) {
+    const d = pick([2, 3, 4, 5, 6, 8, 10, 12]);
+    const n = allowImproper && Math.random() < 0.3 ? randInt(d + 1, 2 * d - 1) : randInt(1, d - 1);
+    return { text: `${n}/${d}`, value: n / d };
+  }
+  function randDecRep() {
+    const dp = pick([1, 2]);
+    const v = randInt(1, 15 * Math.pow(10, dp - 1)) / Math.pow(10, dp);
+    return { text: v.toFixed(dp).replace(/0+$/, '').replace(/\.$/, ''), value: v };
+  }
+  function compareFracDec() {
+    for (let i = 0; i < 100; i++) {
+      const f = randFracRep(false), dcm = randDecRep();
+      if (dcm.value >= 1.5 || Math.abs(f.value - dcm.value) < 0.02) continue;
+      const greater = Math.random() < 0.5;
+      const pickF = greater ? f.value > dcm.value : f.value < dcm.value;
+      const chosen = pickF ? f : dcm;
+      return makeRat('numbersense', `Which is ${greater ? 'greater' : 'less'}: ${f.text} or ${dcm.text}?`, chosen.value,
+        `Write both as decimals: ${f.text} = ${n2s(f.value)} and ${dcm.text} = ${dcm.text}. ${chosen.text} is ${greater ? 'greater' : 'less'}.`,
+        { display: chosen.text, hint: 'Enter the number itself (as a fraction or a decimal).' });
+    }
+    return compareFracDec();
+  }
+  function orderMixedList(grade) {
+    for (let i = 0; i < 200; i++) {
+      const reps = [];
+      const kinds = grade === 6 ? ['frac', 'dec', 'dec', 'int'] : ['frac', 'frac', 'dec', 'dec'];
+      for (const k of shuffle(kinds)) {
+        let rep;
+        if (k === 'frac') rep = randFracRep(grade === 6);
+        else if (k === 'dec') rep = randDecRep();
+        else rep = { text: String(randInt(-5, 3)), value: 0 };
+        if (k === 'int') rep.value = Number(rep.text);
+        if (grade === 7 && Math.random() < 0.6) {
+          rep = { text: '-' + rep.text, value: -rep.value };
+        }
+        reps.push(rep);
+      }
+      const vals = reps.map(r => r.value).sort((a, b) => a - b);
+      let ok = true;
+      for (let j = 1; j < vals.length; j++) if (vals[j] - vals[j - 1] < 0.04) ok = false;
+      if (!ok || reps.some(r => Math.abs(r.value) > 4)) continue;
+      const sorted = [...reps].sort((a, b) => a.value - b.value);
+      const display = sorted.map(r => r.text).join(', ');
+      return makeRatSeq('numbersense', `Order from least to greatest: ${reps.map(r => r.text).join(', ')}`,
+        sorted.map(r => r.value), display,
+        `Write each number as a decimal to compare: ${sorted.map(r => `${r.text} = ${n2s(r.value)}`).join('; ')}. In order: ${display}.`);
+    }
+    return orderMixedList(grade);
+  }
+  function fracToDecimal() {
+    const d = pick([2, 4, 5, 8, 10, 20, 25, 40, 50]);
+    let n = randInt(1, d * 2 - 1);
+    while (n % d === 0 || gcd(n, d) !== 1) n = randInt(1, d * 2 - 1);
+    const v = r6(n / d);
+    return makeNum('numbersense', `Write ${n}/${d} as a decimal.`, v,
+      `A fraction is a division: ${n} ÷ ${d} = ${n2s(v)}.`, { tol: 1e-9 });
+  }
+  function decToFraction() {
+    const d = pick([2, 4, 5, 8, 10, 20, 25, 40, 50]);
+    let n = randInt(1, d - 1);
+    const r = reduceFrac(n, d);
+    if (r.d === 1) return decToFraction();
+    const dec = r6(n / d);
+    const places = String(dec).split('.')[1].length;
+    const den = Math.pow(10, places);
+    const num = Math.round(dec * den);
+    return makeFrac('numbersense', `Write ${dec} as a fraction in lowest terms.`, num, den,
+      `${dec} = ${num}/${den}. Divide the top and bottom by ${gcd(num, den)}: ${r.n}/${r.d}.`, { requireLowest: true });
+  }
+  function placeValueDigit(maxDigits) {
+    for (let i = 0; i < 100; i++) {
+      const len = maxDigits === 6 ? randInt(5, 6) : randInt(8, 10);
+      const digits = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, len);
+      if (digits[0] === 0) continue;
+      const N = Number(digits.join(''));
+      const idx = randInt(0, len - 1);
+      const dg = digits[idx];
+      if (dg === 0) continue;
+      const value = dg * Math.pow(10, len - 1 - idx);
+      return makeNum('numbersense', `In ${fmtBig(N)}, what is the value of the digit ${dg}?`, value,
+        `The digit ${dg} is in the ${fmtBig(Math.pow(10, len - 1 - idx))}s place, so its value is ${dg} × ${fmtBig(Math.pow(10, len - 1 - idx))} = ${fmtBig(value)}.`,
+        { display: fmtBig(value), hint: 'Enter a number.' });
+    }
+    return placeValueDigit(maxDigits);
+  }
+  function expandedToStandard6() {
+    const len = randInt(5, 6);
+    const digits = Array.from({ length: len }, (_, i) => (i === 0 ? randInt(1, 9) : randInt(0, 9)));
+    const N = Number(digits.join(''));
+    const parts = digits.map((dg, i) => dg * Math.pow(10, len - 1 - i)).filter(v => v > 0);
+    return makeNum('numbersense', `Write ${parts.map(fmtBig).join(' + ')} as a number.`, N,
+      `Add the place values: ${parts.map(fmtBig).join(' + ')} = ${fmtBig(N)}.`, { display: fmtBig(N) });
+  }
+  function decimalPlaceDigit6() {
+    const names = ['tenths', 'hundredths', 'thousandths'];
+    const ds = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 3);
+    const w = randInt(1, 9);
+    const num = `${w}.${ds.join('')}`;
+    const idx = randInt(0, 2);
+    return makeNum('numbersense', `In ${num}, which digit is in the ${names[idx]} place?`, ds[idx],
+      `After the decimal point the places are tenths, hundredths, thousandths. The ${names[idx]} digit is ${ds[idx]}.`, { hint: 'Enter a single digit.' });
+  }
+  function placeBig7() {
+    const t = randInt(1, 3);
+    if (t === 1) return placeValueDigit(10);
+    if (t === 2) {
+      const exps = shuffle([3, 4, 5, 6, 7, 8]).slice(0, 3).sort((a, b) => b - a);
+      const coefs = exps.map(() => randInt(1, 9));
+      const value = exps.reduce((s, e, i) => s + coefs[i] * Math.pow(10, e), 0);
+      const expr = exps.map((e, i) => `${coefs[i]} × 10${sup(e)}`).join(' + ');
+      return makeNum('numbersense', `Write ${expr} as a number.`, value,
+        `${exps.map((e, i) => `${coefs[i]} × 10${sup(e)} = ${fmtBig(coefs[i] * Math.pow(10, e))}`).join(', ')}. Add them: ${fmtBig(value)}.`, { display: fmtBig(value) });
+    }
+    const e = randInt(2, 6), c = randInt(1, 9);
+    const value = c * Math.pow(10, e);
+    return makeNum('numbersense', `${fmtBig(value)} = ${c} × 10^?  What is the exponent?`, e,
+      `${fmtBig(value)} is ${c} followed by ${e} zeros, so it equals ${c} × 10${sup(e)}.`, { hint: 'Enter the exponent.' });
+  }
+  function perfectSquares7() {
+    const t = randInt(1, 5);
+    const k = randInt(2, 20);
+    if (t === 1) return makeNum('numbersense', `What is √${k * k}?`, k, `${k} × ${k} = ${k * k}, so √${k * k} = ${k}.`);
+    if (t === 2) { const m = randInt(11, 25); return makeNum('numbersense', `What is ${m}²?`, m * m, `${m}² = ${m} × ${m} = ${m * m}.`); }
+    if (t === 3) return makeNum('numbersense', `What is the next perfect square after ${k * k}?`, (k + 1) * (k + 1),
+      `${k * k} = ${k}², so the next perfect square is ${k + 1}² = ${(k + 1) * (k + 1)}.`);
+    if (t === 4) {
+      const isSq = Math.random() < 0.5;
+      const n = isSq ? k * k : k * k + randInt(1, 2 * k);
+      return makeYesNo('numbersense', `Is ${n} a perfect square?`, Math.sqrt(n) % 1 === 0,
+        Math.sqrt(n) % 1 === 0 ? `Yes: ${Math.sqrt(n)} × ${Math.sqrt(n)} = ${n}.` : `No: ${Math.floor(Math.sqrt(n))}² = ${Math.floor(Math.sqrt(n)) ** 2} and ${Math.floor(Math.sqrt(n)) + 1}² = ${(Math.floor(Math.sqrt(n)) + 1) ** 2}, so ${n} is between two perfect squares.`);
+    }
+    const M = pick([50, 100, 150, 200]);
+    return makeNum('numbersense', `How many perfect squares are there from 1 to ${M} (including 1)?`, Math.floor(Math.sqrt(M)),
+      `The perfect squares are 1², 2², 3², … up to ${Math.floor(Math.sqrt(M))}² = ${Math.floor(Math.sqrt(M)) ** 2}. That is ${Math.floor(Math.sqrt(M))} perfect squares.`);
+  }
+  function convertFPD7() {
+    const t = randInt(1, 5);
+    const d = pick([2, 4, 5, 8, 10, 20, 25, 40, 50]);
+    let n = randInt(1, d - 1);
+    const r = reduceFrac(n, d);
+    if (t === 1) {
+      const pct = r6(n / d * 100);
+      return makeNum('numbersense', `Write ${n}/${d} as a percent.`, pct,
+        `${n}/${d} = ${n} ÷ ${d} = ${n2s(n / d)} = ${n2s(pct)}%.`, { display: `${n2s(pct)}%`, hint: 'Enter a number (the percent), e.g. 25 for 25%.' });
+    }
+    if (t === 2) {
+      const pct = pick([5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 65, 70, 75, 80, 85, 90]);
+      const rr = reduceFrac(pct, 100);
+      return makeFrac('numbersense', `Write ${pct}% as a fraction in lowest terms.`, pct, 100,
+        `${pct}% = ${pct}/100. Divide the top and bottom by ${gcd(pct, 100)}: ${rr.n}/${rr.d}.`, { requireLowest: true });
+    }
+    if (t === 3) {
+      const dec = r6(randInt(1, 99) / 100 + (Math.random() < 0.3 ? 0.005 : 0));
+      const pct = r6(dec * 100);
+      return makeNum('numbersense', `Write ${dec} as a percent.`, pct,
+        `Multiply by 100: ${dec} × 100 = ${n2s(pct)}%.`, { display: `${n2s(pct)}%`, hint: 'Enter a number (the percent), e.g. 25 for 25%.' });
+    }
+    if (t === 4) {
+      const pct = r6(randInt(1, 99) + (Math.random() < 0.3 ? 0.5 : 0));
+      return makeNum('numbersense', `Write ${n2s(pct)}% as a decimal.`, r6(pct / 100),
+        `Divide by 100: ${n2s(pct)} ÷ 100 = ${n2s(pct / 100)}.`, { tol: 1e-9 });
+    }
+    const v = r6(n / d);
+    return makeNum('numbersense', `Write ${n}/${d} as a decimal.`, v, `${n} ÷ ${d} = ${n2s(v)}.`, { tol: 1e-9 });
+  }
+  function simplifyFraction7() {
+    const a = randInt(1, 11), b = randInt(a + 1, 12);
+    const g = gcd(a, b);
+    const A = a / g, B = b / g, k = randInt(2, 9);
+    return makeFrac('numbersense', `Write ${A * k}/${B * k} in lowest terms.`, A * k, B * k,
+      `The greatest common factor of ${A * k} and ${B * k} is ${k}. Divide both by ${k}: ${A}/${B}.`, { requireLowest: true });
+  }
+  function compareRational7() {
+    for (let i = 0; i < 200; i++) {
+      const a = randFracRep(false), b = randDecRep();
+      const fa = { text: '-' + a.text, value: -a.value };
+      const fb = Math.random() < 0.7 ? { text: '-' + b.text, value: -b.value } : b;
+      if (Math.abs(fa.value - fb.value) < 0.03 || Math.abs(fb.value) > 1.6) continue;
+      const greater = Math.random() < 0.5;
+      const chosen = (fa.value > fb.value) === greater ? fa : fb;
+      return makeRat('numbersense', `Which is ${greater ? 'greater' : 'less'}: ${fa.text} or ${fb.text}?`, chosen.value,
+        `Write both as decimals: ${fa.text} = ${n2s(fa.value)} and ${fb.text} = ${n2s(fb.value)}. On a number line, ${greater ? 'the one further right' : 'the one further left'} is ${chosen.text}.`,
+        { display: chosen.text, hint: 'Enter the number itself (as a fraction or a decimal).' });
+    }
+    return compareRational7();
+  }
+  GENERATORS.numbersense = {
+    6: [roundDecimal, roundRepeating6, compareDecimals6, compareFracDec, () => orderMixedList(6), fracToDecimal,
+      decToFraction, () => placeValueDigit(6), expandedToStandard6, decimalPlaceDigit6],
+    7: [roundDecimal, placeBig7, perfectSquares7, perfectSquares7, convertFPD7, convertFPD7, simplifyFraction7,
+      compareRational7, () => orderMixedList(7), decToFraction]
+  };
+
+  // =====================================================================
+  // NUMBER: factors & powers  (Gr 6: B2.2 divisibility, B2.6 prime factors;
+  //                            Gr 7: B2.6 GCF/LCM, B2.7 exponents)
+  // =====================================================================
+  const DIV_RULES = {
+    2: 'A number is divisible by 2 if its last digit is even',
+    3: 'A number is divisible by 3 if the sum of its digits is divisible by 3',
+    4: 'A number is divisible by 4 if its last two digits form a number divisible by 4',
+    5: 'A number is divisible by 5 if its last digit is 0 or 5',
+    6: 'A number is divisible by 6 if it is divisible by both 2 and 3',
+    8: 'A number is divisible by 8 if its last three digits form a number divisible by 8',
+    9: 'A number is divisible by 9 if the sum of its digits is divisible by 9',
+    10: 'A number is divisible by 10 if its last digit is 0'
+  };
+  function divisibilityYesNo() {
+    const d = pick([2, 3, 4, 5, 6, 8, 9, 10]);
+    let N;
+    if (Math.random() < 0.5) N = d * randInt(Math.ceil(100 / d), Math.floor(999 / d));
+    else { do { N = randInt(100, 999); } while (N % d === 0); }
+    const yes = N % d === 0;
+    const digitSum = String(N).split('').reduce((s, c) => s + Number(c), 0);
+    let detail = '';
+    if (d === 3 || d === 9) detail = ` The digits add to ${digitSum}.`;
+    if (d === 4) detail = ` The last two digits are ${String(N).slice(-2)}.`;
+    if (d === 8) detail = ` The last three digits are ${String(N).slice(-3)}.`;
+    return makeYesNo('factors', `Is ${N} divisible by ${d}?`, yes, `${DIV_RULES[d]}.${detail} So ${N} ${yes ? 'is' : 'is not'} divisible by ${d}.`);
+  }
+  function divisibilityList() {
+    const N = pick([120, 180, 216, 240, 270, 300, 360, 420, 450, 480, 540, 600, 630, 720, 756, 810, 864, 900, 945, 972, 990]);
+    const set = [2, 3, 4, 5, 6, 8, 9, 10].filter(d => N % d === 0);
+    return makeSeq('factors', `Which of 2, 3, 4, 5, 6, 8, 9, and 10 divide evenly into ${N}? List them separated by commas.`, set,
+      `Use the divisibility rules on ${N}: it is divisible by ${set.join(', ')}.`, { unordered: true });
+  }
+  function primeFactorsOf(n) {
+    const out = [];
+    let m = n, p = 2;
+    while (m > 1) { while (m % p === 0) { out.push(p); m /= p; } p += 1; }
+    return out;
+  }
+  function primeFactorization() {
+    const n = pick([12, 18, 20, 24, 28, 30, 36, 40, 42, 45, 48, 50, 54, 56, 60, 63, 64, 66, 70, 72, 75, 80, 84, 90, 96, 98, 100, 105, 108, 112, 120, 126, 132, 135, 144, 150]);
+    const f = primeFactorsOf(n);
+    let chain = [], m = n;
+    const steps = [`${n}`];
+    f.slice(0, -1).forEach((p, i) => { m = m / p; steps.push(`${f.slice(0, i + 1).join(' × ')} × ${m}`); });
+    return makeSeq('factors', `Write ${n} as a product of its prime factors. List the prime factors separated by commas (repeat a factor if it appears more than once).`,
+      f, `Build a factor tree, always splitting off a prime: ${steps.join(' = ')}. So ${n} = ${f.join(' × ')}.`,
+      { unordered: true, hint: 'Enter the prime factors separated by commas, e.g. 2, 2, 3.' });
+  }
+  function primeOrComposite() {
+    const pool = [1, 2, 3, 9, 11, 21, 29, 33, 37, 39, 49, 51, 53, 57, 59, 61, 63, 67, 71, 77, 79, 81, 83, 87, 89, 91, 93, 97, 99];
+    const n = pick(pool);
+    if (n === 1) return makeText('factors', 'Is 1 a prime number, a composite number, or neither?', ['neither'], 'neither',
+      '1 has only one factor (itself), so it is neither prime nor composite.', { hint: 'Type prime, composite, or neither.' });
+    const f = primeFactorsOf(n);
+    const prime = f.length === 1;
+    return makeText('factors', `Is ${n} a prime number or a composite number?`, [prime ? 'prime' : 'composite'], prime ? 'prime' : 'composite',
+      prime ? `${n} has only two factors, 1 and ${n}, so it is prime.` : `${n} = ${f.join(' × ')}, so it has factors other than 1 and itself. It is composite.`,
+      { hint: 'Type prime or composite.' });
+  }
+  GENERATORS.factors = {
+    6: [divisibilityYesNo, divisibilityYesNo, divisibilityList, primeFactorization, primeFactorization, primeOrComposite],
+    7: [gcf7, lcm7, lcm7, exponentEval7, exponentEval7, exponentWrite7]
+  };
+  function gcf7() {
+    if (Math.random() < 0.2) {
+      const g = randInt(2, 12), a = randInt(2, 12), b = randInt(2, 12);
+      const x = g * a, y = g * b;
+      if (a === b || gcd(a, b) !== 1 || x > 144 || y > 144) return gcf7();
+      return makeNum('factors', `Find the greatest common factor of ${x} and ${y}.`, g, gcfSolution(x, y, g));
+    }
+    const g = randInt(2, 12);
+    let a = randInt(2, 12), b = randInt(2, 12);
+    while (a === b || gcd(a, b) !== 1 || g * a > 144 || g * b > 144) { a = randInt(2, 12); b = randInt(2, 12); }
+    return makeNum('factors', `Find the greatest common factor of ${g * a} and ${g * b}.`, g, gcfSolution(g * a, g * b, g));
+  }
+  function factorsOf(n) { const out = []; for (let i = 1; i <= n; i++) if (n % i === 0) out.push(i); return out; }
+  function gcfSolution(x, y, g) {
+    return `Factors of ${x}: ${factorsOf(x).join(', ')}. Factors of ${y}: ${factorsOf(y).join(', ')}. The greatest one they share is ${g}.`;
+  }
+  function lcm7() {
+    const t = randInt(1, 3);
+    if (t === 1) {
+      let a = randInt(3, 15), b = randInt(3, 15);
+      while (a === b) b = randInt(3, 15);
+      const L = lcm(a, b);
+      const mult = n => Array.from({ length: Math.min(Math.ceil(L / n), 8) }, (_, i) => n * (i + 1)).join(', ');
+      return makeNum('factors', `Find the lowest common multiple of ${a} and ${b}.`, L,
+        `Multiples of ${a}: ${mult(a)}. Multiples of ${b}: ${mult(b)}. The first one they share is ${L}.`);
+    }
+    if (t === 2) {
+      for (let i = 0; i < 100; i++) {
+        const vals = shuffle([2, 3, 4, 5, 6, 8, 9, 10, 12]).slice(0, 3);
+        const L = lcm(lcm(vals[0], vals[1]), vals[2]);
+        if (L > 180) continue;
+        return makeNum('factors', `Find the lowest common multiple of ${vals[0]}, ${vals[1]} and ${vals[2]}.`, L,
+          `The smallest number that ${vals[0]}, ${vals[1]} and ${vals[2]} all divide into evenly is ${L}.`);
+      }
+    }
+    const a = pick([6, 8, 9, 10, 12, 15, 18, 20]);
+    let b = pick([4, 6, 8, 9, 10, 12, 14, 15, 16]);
+    while (b === a) b = pick([4, 6, 8, 9, 10, 12, 14, 15, 16]);
+    const L = lcm(a, b);
+    return makeNum('factors', `Two buses leave a terminal at the same time. One returns every ${a} minutes and the other returns every ${b} minutes. After how many minutes will they be at the terminal together again?`, L,
+      `Find the lowest common multiple of ${a} and ${b}: ${L}.`, { units: ['min', 'mins', 'minute', 'minutes'] });
+  }
+  function exponentEval7() {
+    for (let i = 0; i < 100; i++) {
+      const b = pick([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      const e = randInt(2, 5);
+      const v = Math.pow(b, e);
+      if (v > 100000) continue;
+      return makeNum('factors', `Evaluate ${b}${sup(e)}.`, v,
+        `${b}${sup(e)} = ${Array(e).fill(b).join(' × ')} = ${fmtBig(v)}.`, { display: fmtBig(v) });
+    }
+    return exponentEval7();
+  }
+  function exponentWrite7() {
+    const t = randInt(1, 2);
+    const b = randInt(2, 9), e = randInt(3, 6);
+    if (t === 1) {
+      return makeText('factors', `Write ${Array(e).fill(b).join(' × ')} using exponential notation.`, [`${b}^${e}`, `${b}${sup(e)}`], `${b}${sup(e)}`,
+        `The base ${b} is repeated ${e} times, so it is ${b}${sup(e)}.`, { hint: 'Type it like 5^4 (or 5⁴).' });
+    }
+    const target = Math.pow(2, e);
+    return makeNum('factors', `2^? = ${target}. What exponent makes this true?`, e,
+      `2 × 2 × … : ${Array(e).fill(2).join(' × ')} = ${target}, so the exponent is ${e}.`, { hint: 'Enter the exponent.' });
   }
 
-  function genIntegers(grade) {
-    return grade === 6 ? genIntegersGrade6() : genIntegersGrade7();
+  // =====================================================================
+  // NUMBER: fractions
+  //   Gr 6: B2.5 add/subtract (like & unlike), B2.9 whole x proper fraction,
+  //         B2.10 whole / proper fraction
+  //   Gr 7: B2.5 add/subtract, B2.8 multiply and divide fractions by fractions
+  //   (Operations on negative fractions are not part of either grade.)
+  // =====================================================================
+  function fracResultText(n, d) {
+    const r = reduceFrac(n, d);
+    const parts = [fracStr(n, d)];
+    if (r.n !== n || r.d !== d) parts.push(fracStr(r.n, r.d));
+    if (r.d > 1 && Math.abs(r.n) > r.d) parts.push(mixedStr(r.n, r.d));
+    return parts.join(' = ');
   }
-
-  function fracAddSub(n1, d1, n2, d2, op) {
+  function fracAddSubSolution(n1, d1, n2, d2, op) {
+    const L = lcm(d1, d2), c1 = n1 * (L / d1), c2 = n2 * (L / d2);
+    const rn = op === '+' ? c1 + c2 : c1 - c2;
+    if (d1 === d2) {
+      return `The denominators are the same, so ${op === '+' ? 'add' : 'subtract'} the numerators: ${n1} ${op} ${n2} = ${rn}. ${fracStr(n1, d1)} ${op} ${fracStr(n2, d2)} = ${fracResultText(rn, L)}.`;
+    }
+    return `Use a common denominator of ${L}: ${fracStr(n1, d1)} = ${c1}/${L} and ${fracStr(n2, d2)} = ${c2}/${L}. Then ${c1}/${L} ${op} ${c2}/${L} = ${fracResultText(rn, L)}.`;
+  }
+  function fracAddSubParts(n1, d1, n2, d2, op) {
     const L = lcm(d1, d2);
-    const m1 = L / d1, m2 = L / d2;
-    const cn1 = n1 * m1, cn2 = n2 * m2;
-    let rn = op === '+' ? cn1 + cn2 : cn1 - cn2;
-    let rd = L;
-    const r = reduceFrac(rn, rd);
-    const solution = `Common denominator is ${L}: ${fracStr(n1, d1)} = ${fracStr(cn1, L)}, ${fracStr(n2, d2)} = ${fracStr(cn2, L)}. ` +
-      `${cn1} ${op} ${cn2} = ${rn}, so the answer is ${fracStr(cn1, L)} ${op} ${fracStr(cn2, L)} = ${fracStr(r.n, r.d)}.`;
-    return { rn: r.n, rd: r.d, solution };
+    const rn = op === '+' ? n1 * (L / d1) + n2 * (L / d2) : n1 * (L / d1) - n2 * (L / d2);
+    return { rn, L };
   }
-
-  // Grade 6 (Ontario B2.5, B2.9, B2.10): add/subtract fractions with like and unlike
-  // denominators; multiply a whole number by a proper fraction; divide a whole number by a
-  // proper fraction. Fraction-by-fraction multiplication/division is a Grade 7 skill (B2.8).
-  function genFractionsGrade6() {
-    const variant = pick(['addsub', 'addsub', 'mulWhole', 'divWhole']);
-    if (variant === 'addsub') {
-      const op = pick(['+', '-']);
-      const d1 = randInt(2, 10), d2 = randInt(2, 10);
-      const n1 = randInt(1, d1 - 1), n2 = randInt(1, d2 - 1);
-      const { rn, rd, solution } = fracAddSub(n1, d1, n2, d2, op);
-      return {
-        topicId: 'fractions',
-        question: `${fracStr(n1, d1)} ${op} ${fracStr(n2, d2)} = ?`,
-        hint: 'Enter your answer as a fraction, e.g. 3/4 (any equivalent fraction is accepted).',
-        answerType: 'fraction',
-        correct: { n: rn, d: rd },
-        correctDisplay: fracStr(rn, rd),
-        solution
-      };
+  function fracAddSub6() {
+    const like = Math.random() < 0.4;
+    let d1 = randInt(2, 12), d2 = like ? d1 : randInt(2, 12);
+    if (!like && d2 === d1) d2 = d1 === 12 ? 11 : d1 + 1;
+    let n1 = randInt(1, d1 - 1), n2 = randInt(1, d2 - 1);
+    let op = pick(['+', '-']);
+    if (op === '-' && n1 * d2 <= n2 * d1) {
+      [n1, d1, n2, d2] = [n2, d2, n1, d1];
+      if (n1 * d2 === n2 * d1) op = '+';
     }
-    const whole = randInt(2, 9);
-    const d = randInt(2, 10), n = randInt(1, d - 1);
-    if (variant === 'mulWhole') {
-      const rn = whole * n, rd = d;
-      const r = reduceFrac(rn, rd);
-      return {
-        topicId: 'fractions',
-        question: `${whole} × ${fracStr(n, d)} = ?`,
-        hint: 'Enter your answer as a fraction, e.g. 3/4 (any equivalent fraction is accepted).',
-        answerType: 'fraction',
-        correct: { n: r.n, d: r.d },
-        correctDisplay: fracStr(r.n, r.d),
-        solution: `Multiply the whole number by the numerator: (${whole}×${n})/${d} = ${fracStr(rn, rd)} = ${fracStr(r.n, r.d)}.`
-      };
-    }
-    // divWhole: whole ÷ proper fraction = whole × reciprocal
-    const rn = whole * d, rd = n;
-    const r = reduceFrac(rn, rd);
-    return {
-      topicId: 'fractions',
-      question: `${whole} ÷ ${fracStr(n, d)} = ?`,
-      hint: 'Enter your answer as a fraction, e.g. 3/4 (any equivalent fraction is accepted).',
-      answerType: 'fraction',
-      correct: { n: r.n, d: r.d },
-      correctDisplay: fracStr(r.n, r.d),
-      solution: `Multiply by the reciprocal: ${whole} × ${fracStr(d, n)} = ${fracStr(rn, rd)} = ${fracStr(r.n, r.d)}.`
-    };
+    const { rn, L } = fracAddSubParts(n1, d1, n2, d2, op);
+    return makeFrac('fractions', `${n1}/${d1} ${op} ${n2}/${d2} = ?`, rn, L, fracAddSubSolution(n1, d1, n2, d2, op));
   }
-
-  // Grade 7 (Ontario B1.3, B2.5, B2.8): all four operations between two fractions, including
-  // negative fractions.
-  function genFractionsGrade7() {
-    const op = pick(['+', '-', '×', '÷']);
-    const allowNeg = Math.random() < 0.3;
-    const d1 = randInt(2, 10), d2 = randInt(2, 10);
-    let n1 = randInt(1, d1 - 1) * (allowNeg && Math.random() < 0.5 ? -1 : 1);
-    let n2 = randInt(1, d2 - 1) * (allowNeg && Math.random() < 0.5 ? -1 : 1);
-    let rn, rd, solution;
-
-    if (op === '+' || op === '-') {
-      const r = fracAddSub(n1, d1, n2, d2, op);
-      rn = r.rn; rd = r.rd; solution = r.solution;
-    } else if (op === '×') {
-      rn = n1 * n2; rd = d1 * d2;
-      const r = reduceFrac(rn, rd);
-      solution = `Multiply straight across: (${n1}×${n2}) / (${d1}×${d2}) = ${fracStr(rn, rd)} = ${fracStr(r.n, r.d)}.`;
-      rn = r.n; rd = r.d;
-    } else {
-      rn = n1 * d2; rd = d1 * n2;
-      const r = reduceFrac(rn, rd);
-      solution = `Flip the second fraction and multiply: ${fracStr(n1, d1)} × ${fracStr(d2, n2)} = ${fracStr(n1 * d2, d1 * n2)} = ${fracStr(r.n, r.d)}.`;
-      rn = r.n; rd = r.d;
+  function fracWord6() {
+    const nm = pick(NAMES);
+    let d1, d2, n1, n2;
+    do {
+      d1 = randInt(2, 8); d2 = randInt(2, 8);
+      n1 = randInt(1, d1 - 1); n2 = randInt(1, d2 - 1);
+    } while (d1 === d2 || gcd(n1, d1) !== 1 || gcd(n2, d2) !== 1 || n1 * d2 === n2 * d1);
+    const t = randInt(1, 3);
+    if (t === 1) {
+      const { rn, L } = fracAddSubParts(n1, d1, n2, d2, '+');
+      return makeFrac('fractions', `${nm} used ${n1}/${d1} cup of flour for muffins and ${n2}/${d2} cup of flour for cookies. How many cups of flour did ${nm} use altogether?`, rn, L,
+        fracAddSubSolution(n1, d1, n2, d2, '+'), { hint: 'Enter a fraction or mixed number of cups.' });
     }
-
-    return {
-      topicId: 'fractions',
-      question: `${fracStr(n1, d1)} ${op} ${fracStr(n2, d2)} = ?`,
-      hint: 'Enter your answer as a fraction, e.g. 3/4 (any equivalent fraction is accepted).',
-      answerType: 'fraction',
-      correct: { n: rn, d: rd },
-      correctDisplay: fracStr(rn, rd),
-      solution
-    };
-  }
-
-  function genFractions(grade) {
-    return grade === 6 ? genFractionsGrade6() : genFractionsGrade7();
-  }
-
-  function decAddSub(a, b, op) {
-    const result = round2(op === '+' ? a + b : a - b);
-    const question = `${fmtSigned(a)} ${op} ${fmtSigned(b)}`;
-    return {
-      topicId: 'decimals',
-      question: `${question} = ?`,
-      hint: 'Enter a decimal number.',
-      answerType: 'number',
-      correct: { value: result, tolerance: 0.01 },
-      correctDisplay: `${result}`,
-      solution: `${question} = ${result}`
-    };
-  }
-
-  // Grade 6 (Ontario B2.4, B2.7, B2.8, B2.11): add/subtract decimals; multiply/divide a whole
-  // number by a decimal with one decimal place (tenths); divide a decimal by a whole number.
-  // Decimal-by-decimal multiplication/division is a Grade 7 skill (B2.9).
-  function genDecimalsGrade6() {
-    const variant = pick(['addsub', 'addsub', 'mulTenths', 'divTenths', 'divByWhole']);
-    if (variant === 'addsub') {
-      const a = round2(randInt(10, 200) / 10), b = round2(randInt(10, 200) / 10);
-      return decAddSub(a, b, pick(['+', '-']));
+    if (n1 * d2 <= n2 * d1) { [n1, d1, n2, d2] = [n2, d2, n1, d1]; }
+    const { rn, L } = fracAddSubParts(n1, d1, n2, d2, '-');
+    if (t === 2) {
+      return makeFrac('fractions', `A board is ${n1}/${d1} m long. ${nm} cuts off a piece that is ${n2}/${d2} m long. How much of the board is left, in metres?`, rn, L,
+        fracAddSubSolution(n1, d1, n2, d2, '-'), { hint: 'Enter a fraction of a metre.' });
     }
-    if (variant === 'mulTenths') {
-      const whole = randInt(2, 50), tenths = round2(randInt(1, 99) / 10);
-      const result = round2(whole * tenths);
-      return {
-        topicId: 'decimals', question: `${whole} × ${tenths} = ?`,
-        hint: 'Enter a decimal number.', answerType: 'number',
-        correct: { value: result, tolerance: 0.01 }, correctDisplay: `${result}`,
-        solution: `${whole} × ${tenths} = ${result}.`
-      };
-    }
-    if (variant === 'divTenths') {
-      // pick the tenths divisor first, then a multiple of it that lands on a whole-number dividend
-      let k;
-      do { k = randInt(1, 99); } while (k % 10 === 0);
-      const tenths = round2(k / 10);
-      const need = 10 / gcd(k, 10);
-      const result = need * randInt(1, 6);
-      const whole = Math.round(tenths * result); // guaranteed integer by construction
-      return {
-        topicId: 'decimals', question: `${whole} ÷ ${tenths} = ?`,
-        hint: 'Enter a decimal number.', answerType: 'number',
-        correct: { value: result, tolerance: 0.01 }, correctDisplay: `${result}`,
-        solution: `${whole} ÷ ${tenths} = ${result}.`
-      };
-    }
-    // divByWhole: decimal ÷ whole number (≤10)
-    const whole = randInt(2, 10);
-    const result = round2(randInt(10, 300) / 100);
-    const dividend = round2(whole * result);
-    return {
-      topicId: 'decimals', question: `${dividend} ÷ ${whole} = ?`,
-      hint: 'Enter a decimal number.', answerType: 'number',
-      correct: { value: result, tolerance: 0.01 }, correctDisplay: `${result}`,
-      solution: `${dividend} ÷ ${whole} = ${result}.`
-    };
+    return makeFrac('fractions', `${nm} had ${n1}/${d1} of a pizza left and ate ${n2}/${d2} of the pizza. How much of the pizza is left?`, rn, L,
+      fracAddSubSolution(n1, d1, n2, d2, '-'), { hint: 'Enter a fraction of the pizza.' });
   }
-
-  // Grade 7 (Ontario B1.3, B2.9): multiply and divide decimal numbers by decimal numbers,
-  // including negatives.
-  function genDecimalsGrade7() {
-    const op = pick(['+', '-', '×', '÷']);
-    const allowNeg = Math.random() < 0.3;
-    function randDec() {
-      const v = round2(randInt(10, 200) / 10);
-      return allowNeg && Math.random() < 0.5 ? -v : v;
-    }
-    let a, b, result;
-    if (op === '÷') {
-      b = randDec() || 1;
-      result = randDec();
-      a = round2(b * result);
-    } else {
-      a = randDec();
-      b = randDec();
-      if (op === '+') result = round2(a + b);
-      else if (op === '-') result = round2(a - b);
-      else result = round2(a * b);
-    }
-    const question = `${fmtSigned(a)} ${op} ${fmtSigned(b)}`;
-    return {
-      topicId: 'decimals',
-      question: `${question} = ?`,
-      hint: 'Enter a decimal number.',
-      answerType: 'number',
-      correct: { value: result, tolerance: 0.01 },
-      correctDisplay: `${result}`,
-      solution: `${question} = ${result}`
-    };
+  function fracMulWhole6() {
+    const w = randInt(2, 12), d = randInt(2, 10), n = randInt(1, d - 1);
+    const sol = `Multiply the whole number by the numerator: ${w} × ${n} = ${w * n}, so ${w} × ${n}/${d} = ${fracResultText(w * n, d)}.`;
+    if (Math.random() < 0.5) return makeFrac('fractions', `${w} × ${n}/${d} = ?`, w * n, d, sol);
+    return makeFrac('fractions', `Find ${n}/${d} of ${w}.`, w * n, d, sol);
   }
-
-  function genDecimals(grade) {
-    return grade === 6 ? genDecimalsGrade6() : genDecimalsGrade7();
+  function fracDivWhole6() {
+    const w = randInt(2, 9), d = randInt(2, 10), n = Math.random() < 0.5 ? 1 : randInt(1, d - 1);
+    const sol = `Dividing by ${n}/${d} is the same as multiplying by its reciprocal ${d}/${n}: ${w} × ${d}/${n} = ${fracResultText(w * d, n)}.`;
+    if (n === 1 && Math.random() < 0.5) {
+      return makeFrac('fractions', `How many 1/${d}-cup scoops are in ${w} cups of flour?`, w * d, 1,
+        `Each cup holds ${d} scoops of 1/${d}. ${w} ÷ 1/${d} = ${w} × ${d} = ${w * d}.`, { hint: 'Enter a number.' });
+    }
+    return makeFrac('fractions', `${w} ÷ ${n}/${d} = ?`, w * d, n, sol);
   }
-
-  function genRatios(grade) {
+  function fracAddSub7() {
+    let d1, d2, n1, n2;
+    do {
+      d1 = randInt(2, 12); d2 = randInt(2, 12);
+      n1 = randInt(1, Math.floor(d1 * 1.5)); n2 = randInt(1, Math.floor(d2 * 1.5));
+    } while (gcd(n1, d1) !== 1 || gcd(n2, d2) !== 1);
+    let op = pick(['+', '-']);
+    if (op === '-' && n1 * d2 <= n2 * d1) {
+      [n1, d1, n2, d2] = [n2, d2, n1, d1];
+      if (n1 * d2 === n2 * d1) op = '+';
+    }
+    const { rn, L } = fracAddSubParts(n1, d1, n2, d2, op);
+    return makeFrac('fractions', `${n1}/${d1} ${op} ${n2}/${d2} = ?`, rn, L, fracAddSubSolution(n1, d1, n2, d2, op));
+  }
+  function fracMul7() {
+    let d1, d2, n1, n2;
+    do {
+      d1 = randInt(2, 9); d2 = randInt(2, 9);
+      n1 = randInt(1, d1 + 3); n2 = randInt(1, d2 + 3);
+    } while (gcd(n1, d1) !== 1 || gcd(n2, d2) !== 1);
+    return makeFrac('fractions', `${n1}/${d1} × ${n2}/${d2} = ?`, n1 * n2, d1 * d2,
+      `Multiply the numerators and multiply the denominators: (${n1} × ${n2}) / (${d1} × ${d2}) = ${fracResultText(n1 * n2, d1 * d2)}.`);
+  }
+  function fracDiv7() {
+    let d1, d2, n1, n2;
+    do {
+      d1 = randInt(2, 9); d2 = randInt(2, 9);
+      n1 = randInt(1, d1 + 3); n2 = randInt(1, d2 + 3);
+    } while (gcd(n1, d1) !== 1 || gcd(n2, d2) !== 1);
+    return makeFrac('fractions', `${n1}/${d1} ÷ ${n2}/${d2} = ?`, n1 * d2, d1 * n2,
+      `Multiply by the reciprocal of the second fraction: ${n1}/${d1} × ${d2}/${n2} = ${fracResultText(n1 * d2, d1 * n2)}.`);
+  }
+  function fracWholeDiv7() {
+    let d, n;
+    do { d = randInt(2, 9); n = randInt(1, d - 1); } while (gcd(n, d) !== 1);
+    const w = randInt(2, 9);
+    return makeFrac('fractions', `${w} ÷ ${n}/${d} = ?`, w * d, n,
+      `${w} ÷ ${n}/${d} = ${w} × ${d}/${n} = ${fracResultText(w * d, n)}.`);
+  }
+  function fracWord7() {
+    const nm = pick(NAMES);
     if (Math.random() < 0.5) {
-      // simplify a ratio
-      const p = randInt(1, 9), q = randInt(1, 9);
-      const g0 = gcd(p, q);
-      const rp = p / g0, rq = q / g0;
-      const k = randInt(2, 6);
-      const a = rp * k, b = rq * k;
-      return {
-        topicId: 'ratios',
-        question: `Simplify the ratio ${a} : ${b}`,
-        hint: 'Enter your answer as a ratio, e.g. 2:3.',
-        answerType: 'ratio',
-        correct: { n: rp, d: rq },
-        correctDisplay: `${rp}:${rq}`,
-        solution: `The greatest common factor of ${a} and ${b} is ${gcd(a, b)}. Divide both terms: ${a}÷${gcd(a,b)} : ${b}÷${gcd(a,b)} = ${rp}:${rq}.`
-      };
+      let d1, d2, n1, n2;
+      do {
+        d1 = randInt(2, 8); d2 = randInt(2, 8);
+        n1 = randInt(1, d1 - 1); n2 = randInt(1, d2 - 1);
+      } while (gcd(n1, d1) !== 1 || gcd(n2, d2) !== 1);
+      return makeFrac('fractions', `A recipe needs ${n1}/${d1} cup of milk. ${nm} makes ${n2}/${d2} of the recipe. How many cups of milk are needed?`, n1 * n2, d1 * d2,
+        `Find ${n2}/${d2} of ${n1}/${d1}: ${n1}/${d1} × ${n2}/${d2} = ${fracResultText(n1 * n2, d1 * d2)}.`, { hint: 'Enter a fraction of a cup.' });
+    }
+    const dp = pick([2, 3, 4, 6, 8]), np = randInt(1, dp - 1);
+    const dq = pick([2, 3, 4, 6, 8, 10, 12]);
+    return makeFrac('fractions', `A ribbon is ${np}/${dp} m long. It is cut into pieces that are each 1/${dq} m long. How many pieces can be cut?`, np * dq, dp,
+      `Divide: ${np}/${dp} ÷ 1/${dq} = ${np}/${dp} × ${dq}/1 = ${fracResultText(np * dq, dp)}.`, { hint: 'Enter a number (a fraction or mixed number if needed).' });
+  }
+  GENERATORS.fractions = {
+    6: [fracAddSub6, fracAddSub6, fracWord6, fracMulWhole6, fracMulWhole6, fracDivWhole6, fracDivWhole6],
+    7: [fracAddSub7, fracMul7, fracMul7, fracDiv7, fracDiv7, fracWholeDiv7, fracWord7]
+  };
+
+  // =====================================================================
+  // NUMBER: decimals
+  //   Gr 6: B2.4 add/subtract, B2.7 whole x tenths, B2.8 whole / tenths,
+  //         B2.11 decimal (to thousandths) / whole number up to 10
+  //   Gr 7: B2.9 multiply and divide decimals by decimals
+  // =====================================================================
+  function randDecimal(intMax, dp) {
+    const ip = randInt(0, intMax);
+    let fd = randInt(1, Math.pow(10, dp) - 1);
+    while (fd % 10 === 0) fd = randInt(1, Math.pow(10, dp) - 1);
+    return r6(ip + fd / Math.pow(10, dp));
+  }
+  function decAddSub() {
+    let A, B, dpA, dpB;
+    if (Math.random() < 0.25) {
+      A = randInt(10, 200); dpA = 0;
+      dpB = randInt(1, 2); B = randDecimal(A - 1, dpB);
     } else {
-      // unit rate / proportion
-      const u = randInt(2, 12);
-      const a = randInt(2, 8);
-      const b = randInt(2, 12);
-      const cost = a * u;
-      const answer = b * u;
-      return {
-        topicId: 'ratios',
-        question: `If ${a} items cost $${cost}, how much do ${b} items cost?`,
-        hint: 'Enter a dollar amount (numbers only).',
-        answerType: 'number',
-        correct: { value: answer, tolerance: 0.01 },
-        correctDisplay: `$${answer}`,
-        solution: `Unit price = $${cost} ÷ ${a} = $${u} per item. ${b} items cost ${b} × $${u} = $${answer}.`
-      };
+      dpA = randInt(1, 3); dpB = randInt(1, 3);
+      A = randDecimal(200, dpA); B = randDecimal(200, dpB);
+    }
+    const op = pick(['+', '-']);
+    if (op === '-' && A <= B) { [A, B] = [B, A]; [dpA, dpB] = [dpB, dpA]; }
+    if (op === '-' && A === B) return decAddSub();
+    const res = r6(op === '+' ? A + B : A - B);
+    return makeNum('decimals', `${A.toFixed(dpA)} ${op} ${B.toFixed(dpB)} = ?`, res,
+      `Line up the decimal points (use zeros as placeholders) and ${op === '+' ? 'add' : 'subtract'}: ${A.toFixed(dpA)} ${op} ${B.toFixed(dpB)} = ${n2s(res)}.`,
+      { hint: 'Enter a decimal number.' });
+  }
+  function decMulTenths6() {
+    const W = randInt(100, 999);
+    let k = randInt(11, 99);
+    while (k % 10 === 0) k = randInt(11, 99);
+    const T = k / 10;
+    const res = r6(W * k / 10);
+    return makeNum('decimals', `${W} × ${T} = ?`, res,
+      `Ignore the decimal point: ${W} × ${k} = ${W * k}. ${T} has 1 decimal place, so the answer has 1 decimal place: ${n2s(res)}.`, { hint: 'Enter a decimal number.' });
+  }
+  function decDivTenths6() {
+    for (let i = 0; i < 500; i++) {
+      let k = randInt(11, 99);
+      if (k % 10 === 0) continue;
+      const need = 10 / gcd(k, 10);
+      const q = need * randInt(1, Math.ceil(400 / need));
+      const W = (k * q) / 10;
+      if (W < 100 || W > 999 || W !== Math.floor(W)) continue;
+      return makeNum('decimals', `${W} ÷ ${k / 10} = ?`, q,
+        `Multiply the dividend and the divisor by 10 so the divisor is a whole number: ${W * 10} ÷ ${k} = ${q}.`, { hint: 'Enter a number.' });
+    }
+    return decDivTenths6();
+  }
+  function decDivWhole6() {
+    const w = randInt(2, 10);
+    if (Math.random() < 0.25) {
+      const r = randDecimal(9, 2);
+      const total = r6(w * r);
+      return makeNum('decimals', `${w} friends share a bill of $${total.toFixed(2)} equally. How much does each friend pay?`, r,
+        `${total.toFixed(2)} ÷ ${w} = ${r.toFixed(2)}.`, { units: units('dollar'), display: '$' + r.toFixed(2), hint: 'Enter an amount in dollars.' });
+    }
+    const dpR = randInt(1, 3);
+    const r = randDecimal(20, dpR);
+    const dividend = r6(w * r);
+    return makeNum('decimals', `${n2s(dividend)} ÷ ${w} = ?`, r,
+      `${n2s(dividend)} ÷ ${w} = ${n2s(r)} (check: ${n2s(r)} × ${w} = ${n2s(dividend)}).`, { hint: 'Enter a decimal number.' });
+  }
+  function decMul7() {
+    const combos = [[1, 1], [1, 2], [2, 1]];
+    const [dpA, dpB] = pick(combos);
+    const a = randDecimal(12, dpA), b = randDecimal(9, dpB);
+    if (a === 0 || b === 0) return decMul7();
+    const ai = Math.round(a * Math.pow(10, dpA)), bi = Math.round(b * Math.pow(10, dpB));
+    const res = r6(a * b);
+    return makeNum('decimals', `${a.toFixed(dpA)} × ${b.toFixed(dpB)} = ?`, res,
+      `Ignore the decimal points: ${ai} × ${bi} = ${ai * bi}. Together the factors have ${dpA + dpB} decimal places, so the answer is ${n2s(res)}.`, { hint: 'Enter a decimal number.' });
+  }
+  function decDiv7() {
+    for (let i = 0; i < 300; i++) {
+      const dpB = randInt(1, 2);
+      const b = randDecimal(6, dpB);
+      if (b < 0.2) continue;
+      const dpQ = dpB === 1 ? pick([0, 1, 2]) : pick([0, 1]);
+      const q = dpQ === 0 ? randInt(2, 40) : randDecimal(20, dpQ);
+      if (q < 1) continue;
+      const a = r6(b * q);
+      const dpA = (String(a).split('.')[1] || '').length;
+      if (dpA > 3) continue;
+      const mult = Math.pow(10, dpB);
+      return makeNum('decimals', `${n2s(a)} ÷ ${b.toFixed(dpB)} = ?`, q,
+        `Multiply both numbers by ${mult} so the divisor is a whole number: ${n2s(r6(a * mult))} ÷ ${n2s(r6(b * mult))} = ${n2s(q)}.`, { hint: 'Enter a decimal number.' });
+    }
+    return decDiv7();
+  }
+  function decContext7() {
+    const nm = pick(NAMES);
+    const p = randDecimal(9, 1) + 1, m = randDecimal(7, 1) + 0.5;
+    const price = r6(p), mass = r6(m);
+    const cost = r6(price * mass);
+    return makeNum('decimals', `Grapes cost $${price.toFixed(2)} per kg. ${nm} buys ${mass.toFixed(1)} kg. How much do the grapes cost?`, cost,
+      `${price.toFixed(2)} × ${mass.toFixed(1)} = ${cost.toFixed(2)}.`, { units: units('dollar'), display: '$' + cost.toFixed(2), tol: 0.005, hint: 'Enter an amount in dollars.' });
+  }
+  GENERATORS.decimals = {
+    6: [decAddSub, decAddSub, decMulTenths6, decMulTenths6, decDivTenths6, decDivTenths6, decDivWhole6, decDivWhole6],
+    7: [decAddSub, decMul7, decMul7, decDiv7, decDiv7, decContext7]
+  };
+
+  // =====================================================================
+  // NUMBER: percents  (Gr 6: B2.3 mental math with 1,5,10,15,25,50%; B2.12;
+  //                    Gr 7: B2.2, B2.3 increase/decrease, B2.1)
+  // =====================================================================
+  function pctStrategy(p, N) {
+    const f = x => n2s(x);
+    switch (p) {
+      case 1: return `1% of ${N} = ${N} ÷ 100 = ${f(N / 100)}.`;
+      case 5: return `10% of ${N} = ${f(N / 10)}, and 5% is half of 10%: ${f(N / 20)}.`;
+      case 10: return `10% of ${N} = ${N} ÷ 10 = ${f(N / 10)}.`;
+      case 15: return `10% of ${N} = ${f(N / 10)} and 5% = ${f(N / 20)}, so 15% = ${f(N / 10)} + ${f(N / 20)} = ${f(N * 0.15)}.`;
+      case 20: return `10% of ${N} = ${f(N / 10)}, so 20% = 2 × ${f(N / 10)} = ${f(N / 5)}.`;
+      case 25: return `25% is one quarter: ${N} ÷ 4 = ${f(N / 4)}.`;
+      case 50: return `50% is one half: ${N} ÷ 2 = ${f(N / 2)}.`;
+      case 75: return `25% of ${N} = ${f(N / 4)}, so 75% = 3 × ${f(N / 4)} = ${f(N * 0.75)}.`;
+      case 100: return `100% of ${N} is ${N}.`;
+      default: return `${p}% of ${N} = ${p}/100 × ${N} = ${f(N * p / 100)}.`;
     }
   }
-
-  function genPercentages(grade) {
-    const nicePercents = [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 80, 90];
-    const variantPool = grade === 6 ? ['of', 'isWhatPercent'] : ['of', 'isWhatPercent', 'change'];
-    const variant = pick(variantPool);
-    if (variant === 'of') {
-      const pct = pick(nicePercents);
-      const base = randInt(2, 40) * 5;
-      const part = round2(pct / 100 * base);
-      return {
-        topicId: 'percentages',
-        question: `What is ${pct}% of ${base}?`,
-        hint: 'Enter a number.',
-        answerType: 'number',
-        correct: { value: part, tolerance: 0.05 },
-        correctDisplay: `${part}`,
-        solution: `${pct}% of ${base} = (${pct}/100) × ${base} = ${part}.`
-      };
-    } else if (variant === 'isWhatPercent') {
-      const pct = pick(nicePercents);
-      const base = randInt(1, 10) * 20; // multiple of 20 so every percent in nicePercents divides evenly, no rounding
-      const part = pct / 100 * base;
-      return {
-        topicId: 'percentages',
-        question: `${part} is what percent of ${base}?`,
-        hint: 'Enter a number (percent), e.g. 25 for 25%.',
-        answerType: 'number',
-        correct: { value: pct, tolerance: 0.5 },
-        correctDisplay: `${pct}%`,
-        solution: `(${part} ÷ ${base}) × 100 = ${pct}%.`
-      };
-    } else {
-      const pct = pick(nicePercents);
-      const base = randInt(2, 40) * 5;
-      const up = Math.random() < 0.5;
-      const amount = round2(base * (up ? 1 + pct / 100 : 1 - pct / 100));
-      return {
-        topicId: 'percentages',
-        question: `${base} ${up ? 'increased' : 'decreased'} by ${pct}% is?`,
-        hint: 'Enter a number.',
-        answerType: 'number',
-        correct: { value: amount, tolerance: 0.05 },
-        correctDisplay: `${amount}`,
-        solution: `${pct}% of ${base} = ${round2(pct / 100 * base)}. ${base} ${up ? '+' : '−'} ${round2(pct / 100 * base)} = ${amount}.`
-      };
-    }
+  function pctOf(pcts) {
+    const p = pick(pcts);
+    const N = p === 1 ? randInt(1, 10) * 100 : randInt(1, 20) * 20;
+    return makeNum('percentages', `What is ${p}% of ${N}?`, r6(N * p / 100), pctStrategy(p, N));
   }
-
-  function genOrderOps(grade) {
-    const ops = ['+', '-', '×', '÷'];
-    // build 3 numbers, 2 operators, keep integer-friendly for ÷
-    const nums = [randInt(1, 12), randInt(1, 12), randInt(1, 12)];
-    const opList = [pick(ops), pick(ops)];
-    // if an operator is ÷, make sure it divides evenly by adjusting the number after it
-    if (opList[0] === '÷') nums[1] = pick([1,2,3,4].filter(f => nums[0] % f === 0)) || 1;
-    if (opList[1] === '÷') {
-      const divisors = [1,2,3,4].filter(f => nums[1] % f === 0 && f > 0);
-      nums[2] = pick(divisors.length ? divisors : [1]);
+  function pctContext6() {
+    const p = pick([5, 10, 15, 25, 50]);
+    const N = pick([20, 40, 60, 80, 100, 120, 160, 200]);
+    const disc = r6(N * p / 100);
+    if (Math.random() < 0.5) {
+      return makeNum('percentages', `A video game costs $${N}. It is on sale for ${p}% off. How much is the discount, in dollars?`, disc,
+        pctStrategy(p, N), { units: units('dollar'), display: '$' + n2s(disc), hint: 'Enter an amount in dollars.' });
     }
+    return makeNum('percentages', `A video game costs $${N}. It is on sale for ${p}% off. What is the sale price, in dollars?`, r6(N - disc),
+      `${pctStrategy(p, N)} Sale price = ${N} − ${n2s(disc)} = ${n2s(N - disc)}.`, { units: units('dollar'), display: '$' + n2s(N - disc), hint: 'Enter an amount in dollars.' });
+  }
+  function whatPercent6() {
+    const pct = pick([5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 80]);
+    const whole = randInt(1, 10) * 20;
+    const part = pct * whole / 100;
+    if (Math.random() < 0.5) {
+      return makeNum('percentages', `${part} is what percent of ${whole}?`, pct,
+        `(${part} ÷ ${whole}) × 100 = ${pct}%.`, { display: `${pct}%`, hint: 'Enter a number (the percent), e.g. 25 for 25%.' });
+    }
+    return makeNum('percentages', `${part} out of ${whole} students in a school walk to school. What percent of the students walk?`, pct,
+      `(${part} ÷ ${whole}) × 100 = ${pct}%.`, { display: `${pct}%`, hint: 'Enter a number (the percent), e.g. 25 for 25%.' });
+  }
+  function pctChange7() {
+    const p = pick([1, 5, 10, 25, 50, 100]);
+    const N = p === 1 ? randInt(1, 10) * 100 : randInt(1, 20) * 20;
+    const inc = p === 100 ? true : Math.random() < 0.5;
+    const part = r6(N * p / 100);
+    const res = r6(inc ? N + part : N - part);
+    if (Math.random() < 0.5) {
+      return makeNum('percentages', `${inc ? 'Increase' : 'Decrease'} ${N} by ${p}%.`, res,
+        `${pctStrategy(p, N)} ${N} ${inc ? '+' : '−'} ${n2s(part)} = ${n2s(res)}.`);
+    }
+    return makeNum('percentages', `A bike costs $${N}. Its price ${inc ? 'increases' : 'decreases'} by ${p}%. What is the new price, in dollars?`, res,
+      `${pctStrategy(p, N)} New price = ${N} ${inc ? '+' : '−'} ${n2s(part)} = ${n2s(res)}.`, { units: units('dollar'), display: '$' + n2s(res), hint: 'Enter an amount in dollars.' });
+  }
+  function pctTax7() {
+    const price = randInt(2, 40) * 5;
+    const tax = r6(price * 13 / 100);
+    const total = r6(price + tax);
+    return makeNum('percentages', `A jacket costs $${price} before tax. The HST is 13%. What is the total cost, in dollars?`, total,
+      `10% of ${price} = ${n2s(price / 10)}. 1% = ${n2s(price / 100)}, so 3% = ${n2s(price * 0.03)}. Tax = ${n2s(price / 10)} + ${n2s(price * 0.03)} = ${n2s(tax)}. Total = ${price} + ${n2s(tax)} = ${n2s(total)}.`,
+      { units: units('dollar'), display: '$' + total.toFixed(2), hint: 'Enter an amount in dollars.' });
+  }
+  function pctDiscount7() {
+    const p = pick([5, 10, 15, 25, 50]);
+    const price = randInt(1, 15) * 20;
+    const disc = r6(price * p / 100);
+    return makeNum('percentages', `A sweater regularly costs $${price}. It is discounted by ${p}%. What is the sale price, in dollars?`, r6(price - disc),
+      `${pctStrategy(p, price)} Sale price = ${price} − ${n2s(disc)} = ${n2s(price - disc)}.`, { units: units('dollar'), display: '$' + n2s(price - disc), hint: 'Enter an amount in dollars.' });
+  }
+  function whatPercent7() {
+    const whole = pick([8, 20, 25, 40, 50, 200]);
+    const part = randInt(1, whole - 1);
+    const pct = r6(part / whole * 100);
+    return makeNum('percentages', `${part} is what percent of ${whole}?`, pct,
+      `(${part} ÷ ${whole}) × 100 = ${n2s(part / whole)} × 100 = ${n2s(pct)}%.`, { display: `${n2s(pct)}%`, hint: 'Enter a number (the percent), e.g. 25 for 25%.' });
+  }
+  GENERATORS.percentages = {
+    6: [() => pctOf([1, 5, 10, 15, 25, 50]), () => pctOf([1, 5, 10, 15, 25, 50]), pctContext6, whatPercent6, whatPercent6],
+    7: [pctChange7, pctChange7, pctTax7, pctDiscount7, () => pctOf([5, 10, 15, 20, 25, 50, 75]), whatPercent7]
+  };
 
-    // Evaluate with standard precedence, tracking steps
-    // Step 1: resolve all × and ÷ left-to-right into a list of signed terms
-    const terms = [];
-    let sign = 1;
-    let acc = nums[0];
-    const stepsMulDiv = [];
-    for (let i = 0; i < opList.length; i++) {
-      const op = opList[i];
-      const nextNum = nums[i + 1];
-      if (op === '×' || op === '÷') {
-        const before = acc;
-        acc = op === '×' ? acc * nextNum : acc / nextNum;
-        stepsMulDiv.push(`${before} ${op} ${nextNum} = ${acc}`);
-      } else {
-        terms.push({ sign, value: acc });
-        sign = op === '+' ? 1 : -1;
-        acc = nextNum;
+  // =====================================================================
+  // NUMBER: ratios & rates  (Gr 6: B2.12; Gr 7: B2.10 proportional reasoning)
+  // =====================================================================
+  function simplifyRatio6() {
+    const p = randInt(1, 9), q = randInt(1, 9);
+    const r = reduceFrac(p, q);
+    const k = randInt(2, 6);
+    const a = r.n * k, b = r.d * k;
+    return makeRatio('ratios', `Simplify the ratio ${a} : ${b}`, a, b,
+      `The greatest common factor of ${a} and ${b} is ${gcd(a, b)}. Divide both terms by it: ${a}÷${gcd(a, b)} : ${b}÷${gcd(a, b)} = ${r.n}:${r.d}.`);
+  }
+  function equivRatio6() {
+    let a = randInt(1, 9), b = randInt(1, 9);
+    const k = randInt(2, 9);
+    if (Math.random() < 0.5) {
+      return makeNum('ratios', `${a} : ${b} = ${a * k} : ?`, b * k,
+        `${a} × ${k} = ${a * k}, so multiply ${b} by ${k} too: ${b} × ${k} = ${b * k}.`, { hint: 'Enter the missing number.' });
+    }
+    return makeNum('ratios', `${a} : ${b} = ? : ${b * k}`, a * k,
+      `${b} × ${k} = ${b * k}, so multiply ${a} by ${k} too: ${a} × ${k} = ${a * k}.`, { hint: 'Enter the missing number.' });
+  }
+  const RATIO_CONTEXTS = [
+    ['boys', 'girls', 'students'], ['red marbles', 'blue marbles', 'marbles'],
+    ['cats', 'dogs', 'pets'], ['fiction books', 'non-fiction books', 'books']
+  ];
+  function partWhole6() {
+    const [A, B, noun] = pick(RATIO_CONTEXTS);
+    let p = randInt(1, 6), q = randInt(1, 6);
+    while (p === q) q = randInt(1, 6);
+    const m = randInt(2, 9);
+    if (Math.random() < 0.5) {
+      const askA = Math.random() < 0.5;
+      const total = (p + q) * m;
+      return makeNum('ratios', `In a collection of ${total} ${noun}, the ratio of ${A} to ${B} is ${p}:${q}. How many ${askA ? A : B} are there?`, askA ? p * m : q * m,
+        `There are ${p} + ${q} = ${p + q} equal parts. Each part is ${total} ÷ ${p + q} = ${m}. ${askA ? A : B}: ${askA ? p : q} × ${m} = ${askA ? p * m : q * m}.`, { hint: 'Enter a number.' });
+    }
+    return makeNum('ratios', `The ratio of ${A} to ${B} is ${p}:${q}. There are ${p * m} ${A}. How many ${B} are there?`, q * m,
+      `${p} parts = ${p * m}, so 1 part = ${m}. ${B}: ${q} × ${m} = ${q * m}.`, { hint: 'Enter a number.' });
+  }
+  function rate6() {
+    const t = randInt(1, 3), nm = pick(NAMES);
+    if (t === 1) {
+      const s = randInt(8, 22) * 5, h = randInt(2, 6);
+      return makeNum('ratios', `A car travels ${s * h} km in ${h} hours. What is its average speed in km/h?`, s,
+        `Unit rate: ${s * h} km ÷ ${h} h = ${s} km/h.`, { units: units('kmh'), display: `${s} km/h` });
+    }
+    if (t === 2) {
+      const r = randInt(4, 12) * 5, m = randInt(2, 8);
+      return makeNum('ratios', `${nm} types ${r * m} words in ${m} minutes. How many words does ${nm} type per minute?`, r,
+        `Unit rate: ${r * m} words ÷ ${m} minutes = ${r} words per minute.`, { units: units('perMin', 'words'), display: `${r} words per minute` });
+    }
+    const n = randInt(2, 8), u = randInt(2, 16) * 25 / 100;
+    const total = r6(n * u);
+    return makeNum('ratios', `${n} notebooks cost $${total.toFixed(2)}. What is the price of one notebook, in dollars?`, u,
+      `Unit price: ${total.toFixed(2)} ÷ ${n} = ${u.toFixed(2)}.`, { units: units('dollar'), display: '$' + u.toFixed(2), hint: 'Enter an amount in dollars.' });
+  }
+  function proportionWhole6() {
+    const u = randInt(2, 12), a = randInt(2, 8);
+    let b = randInt(2, 12);
+    while (b === a) b = randInt(2, 12);
+    return makeNum('ratios', `If ${a} items cost $${a * u}, how much do ${b} items cost?`, b * u,
+      `Unit price = $${a * u} ÷ ${a} = $${u} per item. ${b} items cost ${b} × $${u} = $${b * u}.`, { units: units('dollar'), display: `$${b * u}`, hint: 'Enter an amount in dollars.' });
+  }
+  function proportional7() {
+    const ctx = pick([['Hours worked', 'Pay ($)'], ['Tickets', 'Cost ($)'], ['Litres of gas', 'Cost ($)'], ['Days', 'Total cost ($)']]);
+    const k = randInt(2, 9);
+    const prop = Math.random() < 0.5;
+    const c = prop ? 0 : randInt(1, 8);
+    const xs = [1, 2, 3, 4];
+    const ys = xs.map(x => k * x + c);
+    const ratios = xs.map((x, i) => n2s(ys[i] / x));
+    return makeYesNo('ratios', 'Is the relationship shown in the table proportional?', prop,
+      prop
+        ? `Divide y by x for each pair: ${ratios.join(', ')}. The ratios are all equal, so the relationship is proportional.`
+        : `Divide y by x for each pair: ${ratios.join(', ')}. The ratios are not equal (there is a starting amount of ${c}), so it is not proportional.`,
+      { visual: htmlTable(ctx, xs.map((x, i) => [String(x), String(ys[i])])) });
+  }
+  function solveProportion7() {
+    const u = randInt(3, 16) / 2, a = randInt(3, 12) / 2;
+    let b = randInt(3, 12) / 2;
+    while (b === a) b = randInt(3, 12) / 2;
+    const cost = r6(a * u), ans = r6(b * u);
+    return makeNum('ratios', `If ${a.toFixed(1)} kg of apples cost $${cost.toFixed(2)}, how much do ${b.toFixed(1)} kg cost?`, ans,
+      `Unit price: ${cost.toFixed(2)} ÷ ${a.toFixed(1)} = ${u.toFixed(2)} per kg. ${b.toFixed(1)} × ${u.toFixed(2)} = ${ans.toFixed(2)}.`,
+      { units: units('dollar'), display: '$' + ans.toFixed(2), hint: 'Enter an amount in dollars.' });
+  }
+  function bestBuy7() {
+    for (let i = 0; i < 100; i++) {
+      const n1 = pick([4, 6, 8, 10, 12, 15]), n2 = pick([5, 6, 10, 12, 20, 24]);
+      const p1 = randInt(20, 120) / 20 * 1, p2 = randInt(20, 120) / 20 * 1;
+      const u1 = p1 / n1, u2 = p2 / n2;
+      if (Math.abs(u1 - u2) / Math.min(u1, u2) < 0.04) continue;
+      const better = u1 < u2 ? 'A' : 'B';
+      return makeText('ratios', `Pack A has ${n1} granola bars for $${p1.toFixed(2)}. Pack B has ${n2} granola bars for $${p2.toFixed(2)}. Which pack is the better buy?`,
+        [better.toLowerCase(), 'pack ' + better.toLowerCase()], `Pack ${better}`,
+        `Unit price A: ${p1.toFixed(2)} ÷ ${n1} = $${u1.toFixed(3)} per bar. Unit price B: ${p2.toFixed(2)} ÷ ${n2} = $${u2.toFixed(3)} per bar. Pack ${better} costs less per bar.`,
+        { hint: 'Type A or B.' });
+    }
+    return bestBuy7();
+  }
+  function scale7() {
+    const s = pick([2, 5, 10, 20, 25, 50]), d = randInt(2, 18) / 2;
+    return makeNum('ratios', `On a map, 1 cm represents ${s} km. Two towns are ${d.toFixed(1)} cm apart on the map. How far apart are the towns in real life, in km?`, r6(s * d),
+      `Each cm is ${s} km, so ${d.toFixed(1)} × ${s} = ${n2s(s * d)} km.`, { units: units('km'), display: `${n2s(s * d)} km` });
+  }
+  GENERATORS.ratios = {
+    6: [simplifyRatio6, equivRatio6, partWhole6, partWhole6, rate6, rate6, proportionWhole6],
+    7: [proportional7, proportional7, solveProportion7, solveProportion7, bestBuy7, scale7]
+  };
+
+  // =====================================================================
+  // NUMBER: order of operations  (B2.1; Gr 7 also uses exponents, B2.7)
+  // =====================================================================
+  function opsRender(tokens) {
+    const parts = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const t = tokens[i];
+      if (t === '^') { const e = tokens[++i]; parts[parts.length - 1] += sup(e); }
+      else parts.push(String(t));
+    }
+    return parts.join(' ').replace(/\( /g, '(').replace(/ \)/g, ')');
+  }
+  function opsReduceFlat(a) {
+    let i = a.indexOf('^');
+    if (i !== -1) { const out = a.slice(); out.splice(i - 1, 3, Math.pow(a[i - 1], a[i + 1])); return out; }
+    i = a.findIndex(x => x === '×' || x === '÷');
+    if (i !== -1) {
+      const x = a[i - 1], y = a[i + 1];
+      if (a[i] === '÷' && (y === 0 || x % y !== 0)) return null;
+      const out = a.slice(); out.splice(i - 1, 3, a[i] === '×' ? x * y : x / y); return out;
+    }
+    i = a.findIndex(x => x === '+' || x === '−');
+    if (i !== -1) {
+      const v = a[i] === '+' ? a[i - 1] + a[i + 1] : a[i - 1] - a[i + 1];
+      if (v < 0) return null;
+      const out = a.slice(); out.splice(i - 1, 3, v); return out;
+    }
+    return null;
+  }
+  function opsReduce(tokens) {
+    const t = tokens.slice();
+    for (;;) {
+      const close = t.indexOf(')');
+      if (close === -1) break;
+      let open = close;
+      while (t[open] !== '(') open--;
+      const inner = t.slice(open + 1, close);
+      if (inner.length === 1) { t.splice(open, 3, inner[0]); continue; }
+      const r = opsReduceFlat(inner);
+      if (!r) return null;
+      t.splice(open + 1, inner.length, ...r);
+      if (r.length === 1) t.splice(open, 3, r[0]);
+      return t;
+    }
+    if (t.length === 1) return t;
+    return opsReduceFlat(t);
+  }
+  function opsEvaluate(tokens) {
+    const steps = [opsRender(tokens)];
+    let t = tokens.slice(), guard = 0;
+    while (t.length > 1 && guard++ < 40) {
+      const nxt = opsReduce(t);
+      if (!nxt) return null;
+      t = nxt;
+      if (t.some(x => typeof x === 'number' && (x > 1000 || x !== Math.floor(x)))) return null;
+      steps.push(opsRender(t));
+    }
+    if (t.length !== 1) return null;
+    return { result: t[0], steps };
+  }
+  function opsNaive(tokens) {
+    const flat = tokens.filter(x => x !== '(' && x !== ')');
+    let acc = flat[0];
+    for (let i = 1; i < flat.length; i += 2) {
+      const op = flat[i], y = flat[i + 1];
+      if (op === '^') { acc = Math.pow(acc, y); }
+      else if (op === '+') acc += y; else if (op === '−') acc -= y; else if (op === '×') acc *= y; else acc /= y;
+    }
+    return acc;
+  }
+  function genOps(grade) {
+    for (let tries = 0; tries < 800; tries++) {
+      const o = () => pick(['+', '−', '×', '×', '+', '−', '÷']);
+      const n = () => randInt(2, 12);
+      const s = () => randInt(1, 6);
+      const tpl = pick(grade === 6 ? [1, 2, 3, 4, 5, 6, 1, 2] : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 7, 9]);
+      let tokens;
+      switch (tpl) {
+        case 1: tokens = [n(), o(), n(), o(), n(), o(), n()]; break;
+        case 2: tokens = ['(', n(), o(), n(), ')', o(), n(), o(), n()]; break;
+        case 3: tokens = [n(), o(), '(', n(), o(), n(), ')', o(), n()]; break;
+        case 4: tokens = [n(), o(), n(), o(), '(', n(), o(), n(), ')']; break;
+        case 5: tokens = [n(), o(), '(', n(), o(), n(), ')']; break;
+        case 6: tokens = ['(', n(), o(), n(), ')', o(), n()]; break;
+        case 7: tokens = [n(), o(), randInt(2, 6), '^', 2, o(), n()]; break;
+        case 8: tokens = ['(', s(), pick(['+', '+', '×']), s(), ')', '^', 2, o(), n()]; break;
+        case 9: tokens = [randInt(2, 6), '^', 2, o(), n(), o(), n()]; break;
+        default: tokens = [n(), o(), randInt(2, 4), '^', 3]; break;
       }
+      const ev = opsEvaluate(tokens);
+      if (!ev || ev.result < 0 || ev.result > 500) continue;
+      if (!tokens.includes('(') && !tokens.includes('^') && Math.abs(opsNaive(tokens) - ev.result) < 1e-9 && Math.random() < 0.8) continue;
+      const q = opsRender(tokens);
+      return makeNum('orderops', `${q} = ?`, ev.result,
+        `Follow the order of operations (brackets, exponents, then × and ÷ from left to right, then + and − from left to right): ${ev.steps.join(' = ')}.`,
+        { hint: 'Enter a whole number.' });
     }
-    terms.push({ sign, value: acc });
-    const result = terms.reduce((s, t) => s + t.sign * t.value, 0);
+    return genOps(grade);
+  }
+  GENERATORS.orderops = { 6: [() => genOps(6)], 7: [() => genOps(7)] };
 
-    const question = `${nums[0]} ${opList[0]} ${nums[1]} ${opList[1]} ${nums[2]}`;
-    let sumStr = '';
-    terms.forEach((t, idx) => {
-      if (idx === 0) sumStr += (t.sign < 0 ? '-' : '') + t.value;
-      else sumStr += (t.sign < 0 ? ' - ' : ' + ') + t.value;
+  // =====================================================================
+  // ALGEBRA: patterns  (C1.1-C1.4)
+  //   Gr 6: repeating, growing, shrinking; which growing patterns are linear;
+  //         use the rule to solve for unknown values
+  //   Gr 7: compare linear patterns by constant rate and initial value;
+  //         whole numbers and decimal numbers
+  // =====================================================================
+  function ruleText(m, b) {
+    return b === 0 ? `${n2s(m)} × term number` : `${n2s(m)} × term number + ${n2s(b)}`;
+  }
+  function pattGrowing6() {
+    const m = randInt(2, 9), b = randInt(0, 9);
+    const vals = [1, 2, 3, 4].map(x => m * x + b);
+    const n = randInt(8, 25);
+    return makeNum('patterns', `The first four terms of a linear growing pattern have the values ${vals.join(', ')}, … What is the value of term ${n}?`, m * n + b,
+      `Each term increases by ${m}, so term value = ${ruleText(m, b)}. Term ${n}: ${m} × ${n}${b ? ` + ${b}` : ''} = ${m * n + b}.`, { hint: 'Enter a number.' });
+  }
+  function pattTermNumber6() {
+    const m = randInt(2, 9), b = randInt(0, 9), x = randInt(10, 40);
+    const vals = [1, 2, 3, 4].map(k => m * k + b);
+    return makeNum('patterns', `The linear growing pattern ${vals.join(', ')}, … has term values for terms 1, 2, 3 and 4. Which term number has the value ${m * x + b}?`, x,
+      `The rule is term value = ${ruleText(m, b)}. Solve ${m}x${b ? ` + ${b}` : ''} = ${m * x + b}: ${m}x = ${m * x}, so x = ${x}.`, { hint: 'Enter the term number.' });
+  }
+  function pattShrinking6() {
+    const d = randInt(2, 9), n = randInt(6, 12);
+    const s1 = d * (n - 1) + randInt(5, 40);
+    const vals = [0, 1, 2, 3].map(i => s1 - d * i);
+    return makeNum('patterns', `The first four terms of a shrinking pattern are ${vals.join(', ')}, … What is the value of term ${n}?`, s1 - d * (n - 1),
+      `Each term decreases by ${d}. Term ${n} = ${s1} − ${d} × ${n - 1} = ${s1 - d * (n - 1)}.`, { hint: 'Enter a number.' });
+  }
+  function pattRepeating6() {
+    const core = pick(['AB', 'ABC', 'ABBC', 'AABC', 'ABCD', 'AAB']);
+    const letters = core.split('');
+    const shown = [].concat(letters, letters, letters);
+    const n = randInt(20, 60);
+    const L = letters[(n - 1) % letters.length];
+    return makeText('patterns', `A repeating pattern starts: ${shown.join(', ')}, … What is the ${ordinal(n)} element?`, [L.toLowerCase()], L,
+      `The pattern core ${core} has ${letters.length} elements. ${n} ÷ ${letters.length} has a remainder of ${n % letters.length}${n % letters.length === 0 ? `, so the ${ordinal(n)} element is the last element of the core: ${L}` : `, so the ${ordinal(n)} element is element ${n % letters.length} of the core: ${L}`}.`,
+      { hint: 'Type a letter.' });
+  }
+  function pattLinear6() {
+    const t = randInt(1, 5);
+    let vals, linear = false, why;
+    if (t === 1) { const a = randInt(1, 9), d = randInt(2, 9); vals = [0, 1, 2, 3, 4].map(i => a + d * i); linear = true; }
+    else if (t === 2) { vals = [1, 4, 9, 16, 25]; }
+    else if (t === 3) { const a = randInt(1, 4); vals = [0, 1, 2, 3, 4].map(i => a * Math.pow(2, i)); }
+    else if (t === 4) { vals = [1, 3, 6, 10, 15]; }
+    else { const a = randInt(3, 20), d = randInt(2, 7); vals = [0, 1, 2, 3, 4].map(i => a + d * i); linear = true; }
+    const diffs = vals.slice(1).map((v, i) => v - vals[i]);
+    return makeYesNo('patterns', `Is this growing pattern linear? ${vals.join(', ')}, …`, linear,
+      `Find the differences between terms: ${diffs.join(', ')}. ${linear ? 'They are all the same, so the pattern is linear (it graphs as a straight line).' : 'They are not all the same, so the pattern is not linear.'}`);
+  }
+  function pattTable6() {
+    const m = randInt(2, 8), b = randInt(1, 9);
+    const miss = randInt(2, 4);
+    const vals = [1, 2, 3, 4, 5].map(x => (x === miss ? '?' : m * x + b));
+    return makeNum('patterns', `A linear pattern has these term values for terms 1 to 5: ${vals.join(', ')}. What is the missing value?`, m * miss + b,
+      `The values go up by ${m} each time, so the rule is ${ruleText(m, b)}. For term ${miss}: ${m} × ${miss}${b ? ` + ${b}` : ''} = ${m * miss + b}.`, { hint: 'Enter the missing number.' });
+  }
+  function pattRate7() {
+    const m = pick([2, 3, 4, 5, 6, 7, 0.5, 1.5, 2.5, 3.5]), b = pick([1, 2, 3, 4, 5, 0.5, 1.5, 2.5]);
+    const vals = [1, 2, 3, 4].map(x => r6(m * x + b));
+    if (Math.random() < 0.5) {
+      return makeNum('patterns', `A linear pattern has the term values ${vals.map(n2s).join(', ')}, … for terms 1, 2, 3, 4. What is the constant rate of change?`, m,
+        `The values increase by ${n2s(m)} each term, so the constant rate of change is ${n2s(m)}.`, { hint: 'Enter a number.' });
+    }
+    return makeNum('patterns', `A linear pattern has the term values ${vals.map(n2s).join(', ')}, … for terms 1, 2, 3, 4. What is the initial value (the value at term 0)?`, b,
+      `The rate is ${n2s(m)} per term, so go back one step from term 1: ${n2s(vals[0])} − ${n2s(m)} = ${n2s(b)}.`, { hint: 'Enter a number.' });
+  }
+  function pattCompare7() {
+    for (let i = 0; i < 100; i++) {
+      const m1 = randInt(2, 9), m2 = randInt(2, 9), b1 = randInt(0, 12), b2 = randInt(0, 12);
+      const n = randInt(5, 20);
+      const A = m1 * n + b1, B = m2 * n + b2;
+      if (A === B) continue;
+      const w = A > B ? 'A' : 'B';
+      return makeText('patterns', `Pattern A is y = ${m1}x + ${b1} and Pattern B is y = ${m2}x + ${b2}. Which pattern has the greater value at term ${n}?`, [w.toLowerCase(), 'pattern ' + w.toLowerCase()], `Pattern ${w}`,
+        `Pattern A: ${m1} × ${n} + ${b1} = ${A}. Pattern B: ${m2} × ${n} + ${b2} = ${B}. Pattern ${w} is greater.`, { hint: 'Type A or B.' });
+    }
+    return pattCompare7();
+  }
+  function pattEqual7() {
+    const m2 = randInt(2, 7), m1 = m2 + randInt(1, 4), xs = randInt(2, 15), b1 = randInt(1, 9);
+    const b2 = b1 + (m1 - m2) * xs;
+    return makeNum('patterns', `Pattern A is y = ${m1}x + ${b1} and Pattern B is y = ${m2}x + ${b2}. At which term number do the two patterns have the same value?`, xs,
+      `Set the rules equal: ${m1}x + ${b1} = ${m2}x + ${b2}. Subtract ${m2}x and ${b1}: ${m1 - m2}x = ${b2 - b1}, so x = ${xs}.`, { hint: 'Enter the term number.' });
+  }
+  function pattSolve7() {
+    const m = pick([0.5, 1.5, 2.5, 3.5, 4.5]), b = pick([1.5, 2.5, 3.5, 4.5, 5.5]), x = randInt(3, 30);
+    const v = r6(m * x + b);
+    return makeNum('patterns', `A linear pattern has the rule y = ${n2s(m)}x + ${n2s(b)}. Which term number has the value ${n2s(v)}?`, x,
+      `Solve ${n2s(m)}x + ${n2s(b)} = ${n2s(v)}: ${n2s(m)}x = ${n2s(r6(v - b))}, so x = ${x}.`, { hint: 'Enter the term number.' });
+  }
+  function pattDecimal7() {
+    const m = pick([0.5, 0.25, 1.5, 2.5]), b = pick([1, 2, 0.5, 3]);
+    const vals = [1, 2, 3, 4].map(x => r6(m * x + b));
+    const n = randInt(10, 30);
+    return makeNum('patterns', `The first four terms of a linear growing pattern are ${vals.map(n2s).join(', ')}, … What is the value of term ${n}?`, r6(m * n + b),
+      `The pattern increases by ${n2s(m)} each term, so term value = ${n2s(m)} × term number + ${n2s(b)}. Term ${n}: ${n2s(m)} × ${n} + ${n2s(b)} = ${n2s(m * n + b)}.`, { hint: 'Enter a decimal number.' });
+  }
+  GENERATORS.patterns = {
+    6: [pattGrowing6, pattGrowing6, pattTermNumber6, pattShrinking6, pattRepeating6, pattLinear6, pattTable6],
+    7: [pattRate7, pattRate7, pattCompare7, pattEqual7, pattSolve7, pattDecimal7]
+  };
+
+  // =====================================================================
+  // ALGEBRA: expressions  (C2.1 monomials of degree 1, C2.2 evaluating)
+  // =====================================================================
+  const VARS = ['x', 'y', 'n', 'm', 'a', 't', 'p'];
+  function mono(c, v) { return c === 1 ? v : `${c}${v}`; }
+  function monoOptions(c, v) { return c === 1 ? [v, `1${v}`] : [`${c}${v}`]; }
+  function acceptedSums(terms) {
+    const orders = terms.length === 2 ? [[0, 1], [1, 0]] : [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+    const out = [];
+    orders.forEach(ord => {
+      let combos = [''];
+      ord.forEach((idx, k) => {
+        const opts = monoOptions(terms[idx].c, terms[idx].v);
+        const next = [];
+        combos.forEach(cs => opts.forEach(o => next.push(k === 0 ? o : `${cs}+${o}`)));
+        combos = k === 0 ? opts.slice() : next;
+      });
+      combos.forEach(c => out.push(c));
     });
-    let solution;
-    if (stepsMulDiv.length > 0) {
-      solution = `Do multiplication/division first (left to right): ${stepsMulDiv.join('; ')}. Then add/subtract: ${sumStr} = ${result}.`;
-    } else {
-      solution = `Add and subtract left to right: ${question} = ${result}.`;
-    }
-
-    return {
-      topicId: 'orderops',
-      question: `${question} = ?`,
-      hint: 'Enter a number.',
-      answerType: 'number',
-      correct: { value: result, tolerance: 0.001 },
-      correctDisplay: `${result}`,
-      solution
-    };
+    return out;
   }
+  function evalExpr6() {
+    const v = pick(VARS), t = randInt(1, 4);
+    if (t === 1) {
+      const c = randInt(11, 99) / 10, val = randInt(2, 12);
+      return makeNum('expressions', `Evaluate ${c}${v} when ${v} = ${val}.`, r6(c * val),
+        `Replace ${v} with ${val}: ${c}(${val}) = ${n2s(c * val)}.`, { hint: 'Enter a number.' });
+    }
+    if (t === 2) {
+      const a = randInt(2, 9), b = randInt(1, 20), val = randInt(1, 12);
+      return makeNum('expressions', `Evaluate ${a}${v} + ${b} when ${v} = ${val}.`, a * val + b,
+        `${a}(${val}) + ${b} = ${a * val} + ${b} = ${a * val + b}.`, { hint: 'Enter a number.' });
+    }
+    if (t === 3) {
+      const a = randInt(2, 9), val = randInt(2, 12), b = randInt(1, a * val - 1);
+      return makeNum('expressions', `Evaluate ${a}${v} − ${b} when ${v} = ${val}.`, a * val - b,
+        `${a}(${val}) − ${b} = ${a * val} − ${b} = ${a * val - b}.`, { hint: 'Enter a number.' });
+    }
+    const a = randInt(2, 9), b = randInt(2, 9), va = randInt(1, 9), vb = randInt(1, 9);
+    return makeNum('expressions', `Evaluate ${a}a + ${b}b when a = ${va} and b = ${vb}.`, a * va + b * vb,
+      `${a}(${va}) + ${b}(${vb}) = ${a * va} + ${b * vb} = ${a * va + b * vb}.`, { hint: 'Enter a number.' });
+  }
+  function monomials6() {
+    const v = pick(VARS), t = randInt(1, 3);
+    if (t === 1) {
+      const a = randInt(1, 9), b = randInt(1, 9);
+      const ans = a + b;
+      return makeText('expressions', `Simplify: ${mono(a, v)} + ${mono(b, v)}`, monoOptions(ans, v), mono(ans, v),
+        `The terms have the same variable, so add the coefficients: ${a} + ${b} = ${ans}, giving ${mono(ans, v)}.`, { hint: 'Type your answer, e.g. 5m.' });
+    }
+    if (t === 2) {
+      const a = randInt(1, 8), b = randInt(1, 8), ans = a + 1 + b;
+      return makeText('expressions', `Simplify: ${mono(a, v)} + ${v} + ${mono(b, v)}`, monoOptions(ans, v), mono(ans, v),
+        `${v} means 1${v}. Add the coefficients: ${a} + 1 + ${b} = ${ans}, giving ${mono(ans, v)}.`, { hint: 'Type your answer, e.g. 5m.' });
+    }
+    let u = pick(VARS.filter(x => x !== v));
+    const a = randInt(1, 8), b = randInt(2, 9), c = randInt(1, 8);
+    const terms = [{ c: a + c, v }, { c: b, v: u }];
+    return makeText('expressions', `Simplify: ${mono(a, v)} + ${mono(b, u)} + ${mono(c, v)}`, acceptedSums(terms), `${mono(a + c, v)} + ${mono(b, u)}`,
+      `Only terms with the same variable can be combined: ${mono(a, v)} + ${mono(c, v)} = ${mono(a + c, v)}. ${mono(b, u)} stays as it is. Answer: ${mono(a + c, v)} + ${mono(b, u)}.`,
+      { hint: 'Type your answer, e.g. 7x + 2y.' });
+  }
+  function evalExpr7() {
+    const v = pick(VARS), t = randInt(1, 4);
+    if (t === 1) {
+      const a = pick([1.2, 2.4, 3.2, 1.5, 2.5, 4.5, 0.5, 3.5]), b = pick([1.5, 2.5, 3.5, 0.5, 4.5, 1.2]);
+      const val = randInt(2, 9);
+      if (a * val < b) return evalExpr7();
+      return makeNum('expressions', `Evaluate ${n2s(a)}${v} − ${n2s(b)} when ${v} = ${val}.`, r6(a * val - b),
+        `${n2s(a)}(${val}) − ${n2s(b)} = ${n2s(a * val)} − ${n2s(b)} = ${n2s(a * val - b)}.`, { hint: 'Enter a decimal number.' });
+    }
+    if (t === 2) {
+      const a = pick([1.5, 2.5, 3.2, 4.5, 0.5]), b = pick([1.5, 2.8, 3.5, 0.5, 4.2]);
+      const val = pick([1.5, 2.5, 3.5, 0.5, 4.5, 2, 3, 4]);
+      return makeNum('expressions', `Evaluate ${n2s(a)}${v} + ${n2s(b)} when ${v} = ${n2s(val)}.`, r6(a * val + b),
+        `${n2s(a)}(${n2s(val)}) + ${n2s(b)} = ${n2s(a * val)} + ${n2s(b)} = ${n2s(a * val + b)}.`, { hint: 'Enter a decimal number.' });
+    }
+    if (t === 3) {
+      const a = pick([1.5, 2.5, 0.5, 3.5]), b = pick([2.5, 1.5, 3.5, 0.5]);
+      const va = randInt(2, 8), vb = pick([1.5, 2.5, 3.2, 4, 5]);
+      return makeNum('expressions', `Evaluate ${n2s(a)}a + ${n2s(b)}b when a = ${va} and b = ${n2s(vb)}.`, r6(a * va + b * vb),
+        `${n2s(a)}(${va}) + ${n2s(b)}(${n2s(vb)}) = ${n2s(a * va)} + ${n2s(b * vb)} = ${n2s(a * va + b * vb)}.`, { hint: 'Enter a decimal number.' });
+    }
+    const a = randInt(2, 9), val = pick([0.5, 1.5, 2.5, 3.5, 4.5]), b = pick([0.5, 1, 1.5, 2]);
+    return makeNum('expressions', `The perimeter of a square is P = 4s. What is P when s = ${n2s(val)} cm? (Then add ${n2s(b)} cm for a tab.)`, r6(4 * val + b),
+      `4(${n2s(val)}) = ${n2s(4 * val)}, then ${n2s(4 * val)} + ${n2s(b)} = ${n2s(4 * val + b)} cm.`, { units: units('cm'), hint: 'Enter a number of cm.' });
+  }
+  function monomials7() {
+    const v = pick(VARS), t = randInt(1, 3);
+    if (t === 1) {
+      const a = randInt(3, 12), b = randInt(1, a - 1), ans = a - b;
+      return makeText('expressions', `Simplify: ${mono(a, v)} − ${mono(b, v)}`, monoOptions(ans, v), mono(ans, v),
+        `Subtract the coefficients of the like terms: ${a} − ${b} = ${ans}, giving ${mono(ans, v)}.`, { hint: 'Type your answer, e.g. 4y.' });
+    }
+    if (t === 2) {
+      const a = randInt(2, 9), b = randInt(1, 9), c = randInt(1, a - 1), dd = randInt(1, 6);
+      const u = pick(VARS.filter(x => x !== v));
+      const terms = [{ c: a - c, v }, { c: b + dd, v: u }];
+      return makeText('expressions', `Simplify: ${mono(a, v)} + ${mono(b, u)} − ${mono(c, v)} + ${mono(dd, u)}`, acceptedSums(terms), `${mono(a - c, v)} + ${mono(b + dd, u)}`,
+        `Combine like terms: ${v}-terms ${a} − ${c} = ${a - c}; ${u}-terms ${b} + ${dd} = ${b + dd}. Answer: ${mono(a - c, v)} + ${mono(b + dd, u)}.`, { hint: 'Type your answer, e.g. 3a + 4b.' });
+    }
+    const a = randInt(3, 9), b = randInt(1, 6), c = randInt(1, Math.min(5, a + b - 1));
+    const ans = a + b - c;
+    return makeText('expressions', `Simplify: ${mono(a, v)} + ${mono(b, v)} − ${mono(c, v)}`, monoOptions(ans, v), mono(ans, v),
+      `Combine the coefficients: ${a} + ${b} − ${c} = ${ans}, giving ${mono(ans, v)}.`, { hint: 'Type your answer, e.g. 4y.' });
+  }
+  GENERATORS.expressions = {
+    6: [evalExpr6, evalExpr6, monomials6, monomials6],
+    7: [evalExpr7, evalExpr7, monomials7, monomials7]
+  };
 
-  // Ontario C2.3: solve equations that involve multiple terms and whole numbers (Grade 6),
-  // or multiple terms, whole numbers, and decimal numbers (Grade 7). Neither grade's algebra
-  // strand introduces negative coefficients or negative solutions — that's Grade 8+.
-  function genEquations(grade) {
-    const useDecimalConst = grade === 7 && Math.random() < 0.35;
-    const form = pick(['oneStepAdd', 'oneStepMul', 'twoStep']);
-    const x = randInt(0, 12);
-    let a, question, solution;
-
-    function pickConstant(base) {
-      const op = pick(['+', '-']);
-      let value;
-      if (op === '+') {
-        value = useDecimalConst ? round2(randInt(1, 150) / 10) : randInt(1, 15);
+  // =====================================================================
+  // ALGEBRA: equations & inequalities (C2.3, C2.4)
+  //   Gr 6: multiple terms, whole numbers; inequalities with two operations
+  //   Gr 7: multiple terms, whole numbers and decimals; inequalities with
+  //         multiple terms.  (No negative coefficients or solutions.)
+  // =====================================================================
+  function eqG6() {
+    const v = pick(['x', 'n', 'm', 't', 'a']);
+    const form = randInt(1, 10);
+    if (form === 1) {
+      const b = randInt(1, 40), x = randInt(1, 50);
+      return makeNum('equations', `Solve for ${v}: ${v} + ${b} = ${x + b}`, x, `Subtract ${b} from both sides: ${v} = ${x + b} − ${b} = ${x}.`, { hint: `Enter the value of ${v}.` });
+    }
+    if (form === 2) {
+      const b = randInt(1, 40), x = randInt(b + 1, b + 50);
+      return makeNum('equations', `Solve for ${v}: ${v} − ${b} = ${x - b}`, x, `Add ${b} to both sides: ${v} = ${x - b} + ${b} = ${x}.`, { hint: `Enter the value of ${v}.` });
+    }
+    if (form === 3) {
+      const a = randInt(2, 12), x = randInt(1, 12);
+      return makeNum('equations', `Solve for ${v}: ${a}${v} = ${a * x}`, x, `Divide both sides by ${a}: ${v} = ${a * x} ÷ ${a} = ${x}.`, { hint: `Enter the value of ${v}.` });
+    }
+    if (form === 4) {
+      const a = randInt(2, 9), c = randInt(2, 11);
+      return makeNum('equations', `Solve for ${v}: ${v} ÷ ${a} = ${c}`, a * c, `Multiply both sides by ${a}: ${v} = ${c} × ${a} = ${a * c}.`, { hint: `Enter the value of ${v}.` });
+    }
+    if (form === 5) {
+      const a = randInt(2, 9), x = randInt(1, 12), b = randInt(1, 30);
+      return makeNum('equations', `Solve for ${v}: ${a}${v} + ${b} = ${a * x + b}`, x,
+        `Subtract ${b} from both sides: ${a}${v} = ${a * x}. Divide both sides by ${a}: ${v} = ${x}.`, { hint: `Enter the value of ${v}.` });
+    }
+    if (form === 6) {
+      const a = randInt(2, 9), x = randInt(2, 12), b = randInt(1, a * x - 1);
+      return makeNum('equations', `Solve for ${v}: ${a}${v} − ${b} = ${a * x - b}`, x,
+        `Add ${b} to both sides: ${a}${v} = ${a * x}. Divide both sides by ${a}: ${v} = ${x}.`, { hint: `Enter the value of ${v}.` });
+    }
+    if (form === 7) {
+      const a = randInt(2, 9), k = randInt(2, 11), b = randInt(1, 20);
+      return makeNum('equations', `Solve for ${v}: ${v} ÷ ${a} + ${b} = ${k + b}`, a * k,
+        `Work backwards (reverse flow chart). Subtract ${b}: ${v} ÷ ${a} = ${k}. Multiply by ${a}: ${v} = ${a * k}.`, { hint: `Enter the value of ${v}.` });
+    }
+    if (form === 8) {
+      const a = randInt(2, 9), b = randInt(1, 12), k = b + randInt(1, 10);
+      return makeNum('equations', `Solve for ${v}: ${v} ÷ ${a} − ${b} = ${k - b}`, a * k,
+        `Work backwards (reverse flow chart). Add ${b}: ${v} ÷ ${a} = ${k}. Multiply by ${a}: ${v} = ${a * k}.`, { hint: `Enter the value of ${v}.` });
+    }
+    if (form === 9) {
+      const a = randInt(2, 7), b = randInt(2, 7), x = randInt(1, 12);
+      return makeNum('equations', `Solve for ${v}: ${a}${v} + ${b}${v} = ${(a + b) * x}`, x,
+        `Combine like terms: ${a}${v} + ${b}${v} = ${a + b}${v}. Then ${a + b}${v} = ${(a + b) * x}, so ${v} = ${x}.`, { hint: `Enter the value of ${v}.` });
+    }
+    const l = randInt(3, 12), w = randInt(2, 12), A = l * w;
+    if (Math.random() < 0.5) {
+      return makeNum('equations', `The area of a rectangle is A = l × w. If A = ${A} and l = ${l}, find w.`, w,
+        `Substitute: ${A} = ${l} × w. Divide both sides by ${l}: w = ${A} ÷ ${l} = ${w}.`, { hint: 'Enter the value of w.' });
+    }
+    return makeNum('equations', `The area of a rectangle is A = l × w. If A = ${A} and w = ${w}, find l.`, l,
+      `Substitute: ${A} = l × ${w}. Divide both sides by ${w}: l = ${A} ÷ ${w} = ${l}.`, { hint: 'Enter the value of l.' });
+  }
+  function ineqAnswer(B, op) {
+    if (op === '<') return Math.ceil(B - 1e-9) - 1;
+    if (op === '≤') return Math.floor(B + 1e-9);
+    if (op === '>') return Math.floor(B + 1e-9) + 1;
+    return Math.ceil(B - 1e-9);
+  }
+  function ineqProblem(grade) {
+    const v = pick(['x', 'n', 'm', 't']);
+    for (let i = 0; i < 200; i++) {
+      const op = pick(['<', '≤', '>', '≥']);
+      const s = pick([1, -1]);
+      const a = randInt(2, 9), b = randInt(1, 20), x0 = randInt(2, 15);
+      const extra = Math.random() < 0.5 ? 0 : randInt(1, a - 1);
+      const c = a * x0 + s * b + extra;
+      const rhs = c - s * b;
+      const B = rhs / a;
+      if (c < 1 || c > 100 || B < 1) continue;
+      const ans = ineqAnswer(B, op);
+      if (ans < 0) continue;
+      let expr, steps;
+      const sign = s === 1 ? '+' : '−';
+      const bTxt = Math.abs(B * 100 - Math.round(B * 100)) < 1e-9 ? n2s(B) : `${rhs}/${a}, which is about ${B.toFixed(2)}`;
+      if (grade === 7 && Math.random() < 0.6) {
+        const a1 = randInt(1, a - 1), a2 = a - a1;
+        expr = `${a1 === 1 ? '' : a1}${v} + ${a2 === 1 ? '' : a2}${v} ${sign} ${b} ${op} ${c}`;
+        steps = `Combine like terms: ${a}${v} ${sign} ${b} ${op} ${c}. ${s === 1 ? 'Subtract' : 'Add'} ${b}: ${a}${v} ${op} ${rhs}. Divide by ${a}: ${v} ${op} ${bTxt}.`;
       } else {
-        value = useDecimalConst ? round2(randInt(0, base * 10) / 10) : randInt(0, base);
+        expr = `${a}${v} ${sign} ${b} ${op} ${c}`;
+        steps = `${s === 1 ? `Subtract ${b} from` : `Add ${b} to`} both sides: ${a}${v} ${op} ${rhs}. Divide by ${a}: ${v} ${op} ${bTxt}.`;
       }
-      return { op, value };
+      const greatest = op === '<' || op === '≤';
+      return makeNum('equations', `What is the ${greatest ? 'greatest' : 'least'} whole number ${v} that makes ${expr} true?`, ans,
+        `${steps} The ${greatest ? 'greatest' : 'least'} whole number that works is ${ans}.`, { hint: 'Enter a whole number.' });
     }
-
-    if (form === 'oneStepAdd') {
-      const { op, value } = pickConstant(x);
-      const c = round2(op === '+' ? x + value : x - value);
-      question = `x ${op} ${value} = ${c}`;
-      const inverseWord = op === '+' ? 'Subtract' : 'Add';
-      const prep = op === '+' ? 'from' : 'to';
-      solution = `${inverseWord} ${value} ${prep} both sides: x = ${c} ${op === '+' ? '-' : '+'} ${value} = ${x}.`;
-    } else if (form === 'oneStepMul') {
-      a = randInt(2, 9);
-      const c = a * x;
-      question = `${a}x = ${c}`;
-      solution = `Divide both sides by ${a}: x = ${c} ÷ ${a} = ${x}.`;
-    } else {
-      a = randInt(2, 9);
-      const axTerm = a * x;
-      const { op, value } = pickConstant(axTerm);
-      const c = round2(op === '+' ? axTerm + value : axTerm - value);
-      question = `${a}x ${op} ${value} = ${c}`;
-      const inverseWord = op === '+' ? 'Subtract' : 'Add';
-      const prep = op === '+' ? 'from' : 'to';
-      const afterStep = round2(op === '+' ? c - value : c + value);
-      solution = `${inverseWord} ${value} ${prep} both sides: ${a}x = ${afterStep}. Then divide both sides by ${a}: x = ${afterStep} ÷ ${a} = ${x}.`;
-    }
-    return {
-      topicId: 'equations',
-      question: `Solve for x: ${question}`,
-      hint: 'Enter the value of x.',
-      answerType: 'number',
-      correct: { value: x, tolerance: 0.001 },
-      correctDisplay: `x = ${x}`,
-      solution
-    };
+    return ineqProblem(grade);
   }
+  function eqG7() {
+    const v = pick(['x', 'n', 'm', 't', 'a']);
+    const form = randInt(1, 6);
+    const half = Math.random() < 0.3;
+    const x = half ? randInt(1, 24) / 2 : randInt(1, 20);
+    const coefs = [1.5, 2.5, 0.5, 3.5, 2, 3, 4, 5, 4.5];
+    if (form === 1) {
+      const a = pick(coefs), b = randInt(1, 59) / 10, c = r6(a * x + b);
+      return makeNum('equations', `Solve for ${v}: ${n2s(a)}${v} + ${n2s(b)} = ${n2s(c)}`, x,
+        `Subtract ${n2s(b)}: ${n2s(a)}${v} = ${n2s(r6(c - b))}. Divide by ${n2s(a)}: ${v} = ${n2s(x)}.`, { hint: `Enter the value of ${v}.` });
+    }
+    if (form === 2) {
+      let a = pick(coefs), b;
+      if (a * x < 1) return eqG7();
+      b = randInt(1, Math.min(59, Math.floor(a * x * 10) - 1)) / 10;
+      const c = r6(a * x - b);
+      return makeNum('equations', `Solve for ${v}: ${n2s(a)}${v} − ${n2s(b)} = ${n2s(c)}`, x,
+        `Add ${n2s(b)}: ${n2s(a)}${v} = ${n2s(r6(c + b))}. Divide by ${n2s(a)}: ${v} = ${n2s(x)}.`, { hint: `Enter the value of ${v}.` });
+    }
+    if (form === 3) {
+      const a = randInt(2, 10), k = randInt(1, 20), b = randInt(1, 59) / 10;
+      return makeNum('equations', `Solve for ${v}: ${v} ÷ ${a} + ${n2s(b)} = ${n2s(r6(k + b))}`, a * k,
+        `Subtract ${n2s(b)}: ${v} ÷ ${a} = ${k}. Multiply by ${a}: ${v} = ${a * k}.`, { hint: `Enter the value of ${v}.` });
+    }
+    if (form === 4) {
+      const a = randInt(1, 40) / 10, b = randInt(1, 40) / 10;
+      const c = r6((a + b) * x);
+      return makeNum('equations', `Solve for ${v}: ${n2s(a)}${v} + ${n2s(b)}${v} = ${n2s(c)}`, x,
+        `Combine like terms: ${n2s(a)}${v} + ${n2s(b)}${v} = ${n2s(r6(a + b))}${v}. Divide by ${n2s(r6(a + b))}: ${v} = ${n2s(x)}.`, { hint: `Enter the value of ${v}.` });
+    }
+    if (form === 5) {
+      const a = pick([1, 2, 3, 4]), b = pick([1, 2, 3, 4]);
+      const d = randInt(1, 9), c = (a + b) * x - d;
+      if (c <= 0 || c !== Math.round(c * 10) / 10) return eqG7();
+      return makeNum('equations', `Solve for ${v}: ${a === 1 ? '' : a}${v} + ${b === 1 ? '' : b}${v} − ${d} = ${n2s(c)}`, x,
+        `Combine like terms: ${a + b}${v} − ${d} = ${n2s(c)}. Add ${d}: ${a + b}${v} = ${n2s(c + d)}. Divide by ${a + b}: ${v} = ${n2s(x)}.`, { hint: `Enter the value of ${v}.` });
+    }
+    const a = pick([1.5, 2.5, 0.5, 3.5, 4.5, 1.2, 2.4]), c = r6(a * x);
+    return makeNum('equations', `Solve for ${v}: ${n2s(a)}${v} = ${n2s(c)}`, x, `Divide both sides by ${n2s(a)}: ${v} = ${n2s(c)} ÷ ${n2s(a)} = ${n2s(x)}.`, { hint: `Enter the value of ${v}.` });
+  }
+  GENERATORS.equations = {
+    6: [eqG6, eqG6, eqG6, eqG6, () => ineqProblem(6), () => ineqProblem(6)],
+    7: [eqG7, eqG7, eqG7, () => ineqProblem(7), () => ineqProblem(7)]
+  };
 
-  // Grade 6 (Ontario E2.4-E2.6): area of trapezoids and composite polygons by decomposition;
-  // surface area of prisms via nets. Basic rectangle/triangle area/perimeter are kept in the
-  // pool as review (prior-grade skills this still exercises). Circles and volume aren't
-  // introduced until Grade 7 (E2.3, E2.5, E2.7), so they're excluded here.
-  //
-  // Grade 7 (Ontario E2.3, E2.5, E2.7): circumference and area of a circle; volume of a prism
-  // or cylinder (base area × height).
-  //
-  // π is used as 3.14 throughout (matching what students are told to use), so the graded
-  // answer always matches a student who follows the stated approximation.
-  function genGeometry(grade) {
-    const shapePool = grade === 6
-      ? ['rect-area', 'rect-perimeter', 'triangle-area', 'trapezoid-area', 'composite-area', 'prism-surface-area']
-      : ['rect-area', 'rect-perimeter', 'triangle-area', 'circle-area', 'circle-circumference', 'prism-volume', 'cylinder-volume'];
-    const shape = pick(shapePool);
-    const PI = 3.14;
-    if (shape === 'rect-area') {
-      const l = randInt(3, 20), w = randInt(3, 20);
-      const area = l * w;
-      return mkGeom('rect-area', `A rectangle is ${l} cm by ${w} cm. What is its area?`,
-        'Enter a number (cm²).', area, 0.01, `${area} cm²`,
-        `Area = length × width = ${l} × ${w} = ${area} cm².`);
+  // =====================================================================
+  // DATA  (D1.1-D1.6)
+  //   Gr 6: discrete/continuous data, histograms and broken-line graphs,
+  //         range + mean/median/mode, comparing data sets
+  //   Gr 7: percentages for distributions, circle graphs, impact of adding or
+  //         removing a value on measures of central tendency
+  // =====================================================================
+  function meanOf(a) { return a.reduce((s, x) => s + x, 0) / a.length; }
+  function medianOf(a) {
+    const s = [...a].sort((x, y) => x - y), n = s.length;
+    return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2;
+  }
+  function uniqueMode(a) {
+    const c = {};
+    a.forEach(x => { c[x] = (c[x] || 0) + 1; });
+    const max = Math.max(...Object.values(c));
+    const modes = Object.keys(c).filter(k => c[k] === max);
+    return max > 1 && modes.length === 1 ? Number(modes[0]) : null;
+  }
+  function statSet(kind, decimals) {
+    for (let i = 0; i < 300; i++) {
+      const n = randInt(5, 8);
+      if (kind === 'mean') {
+        const m = randInt(8, 40);
+        const vals = Array.from({ length: n - 1 }, () => randInt(Math.max(1, m - 7), m + 9));
+        const last = n * m - vals.reduce((s, x) => s + x, 0);
+        if (last < 1 || last > 60) continue;
+        return shuffle([...vals, last]);
+      }
+      if (kind === 'mode') {
+        const total = randInt(7, 9), M = randInt(3, 30), reps = randInt(2, 3);
+        const rest = new Set();
+        while (rest.size < total - reps) { const x = randInt(1, 40); if (x !== M) rest.add(x); }
+        return shuffle([...Array(reps).fill(M), ...rest]);
+      }
+      return Array.from({ length: n }, () => (decimals ? randInt(10, 400) / 10 : randInt(1, kind === 'range' ? 60 : 40)));
     }
-    if (shape === 'rect-perimeter') {
-      const l = randInt(3, 25), w = randInt(3, 25);
-      const perim = 2 * (l + w);
-      return mkGeom('rect-perimeter', `A rectangle is ${l} cm by ${w} cm. What is its perimeter?`,
-        'Enter a number (cm).', perim, 0.01, `${perim} cm`,
-        `Perimeter = 2 × (length + width) = 2 × (${l} + ${w}) = ${perim} cm.`);
+    return statSet(kind, decimals);
+  }
+  function statProblem(kind, grade) {
+    const decimals = grade === 7 && (kind === 'mean' || kind === 'median') && Math.random() < 0.3;
+    const data = statSet(kind, decimals);
+    const list = data.map(n2s).join(', ');
+    const sorted = [...data].sort((a, b) => a - b);
+    if (kind === 'mean') {
+      const sum = data.reduce((s, x) => s + x, 0);
+      return makeNum('data', `Find the mean of this data set: ${list}`, r6(sum / data.length),
+        `Add the values: ${n2s(sum)}. Divide by the number of values: ${n2s(sum)} ÷ ${data.length} = ${n2s(sum / data.length)}.`, { tol: 0.01, hint: 'Enter a number (round to the nearest hundredth if needed).' });
     }
-    if (shape === 'triangle-area') {
-      const b = randInt(2, 20), h = randInt(2, 20) * 2; // keep b*h even for a clean half
-      const area = round2(0.5 * b * h);
-      return mkGeom('triangle-area', `A triangle has a base of ${b} cm and a height of ${h} cm. What is its area?`,
-        'Enter a number (cm²).', area, 0.01, `${area} cm²`,
-        `Area = ½ × base × height = ½ × ${b} × ${h} = ${area} cm².`);
+    if (kind === 'median') {
+      const md = medianOf(data);
+      return makeNum('data', `Find the median of this data set: ${list}`, md,
+        `Put the values in order: ${sorted.map(n2s).join(', ')}. ${data.length % 2 ? 'The middle value' : 'The mean of the two middle values'} is ${n2s(md)}.`, { tol: 0.01, hint: 'Enter a number.' });
     }
-    if (shape === 'trapezoid-area') {
-      const sumParallel = 2 * randInt(3, 20);
-      const a = randInt(2, sumParallel - 2), b = sumParallel - a;
-      const h = randInt(2, 15);
-      const area = (sumParallel / 2) * h;
-      return mkGeom('trapezoid-area', `A trapezoid has parallel sides of ${a} cm and ${b} cm, and a height of ${h} cm. What is its area?`,
-        'Enter a number (cm²).', area, 0.01, `${area} cm²`,
-        `Area = (side₁ + side₂) ÷ 2 × height = (${a} + ${b}) ÷ 2 × ${h} = ${sumParallel / 2} × ${h} = ${area} cm².`);
+    if (kind === 'mode') {
+      const md = uniqueMode(data);
+      return makeNum('data', `Find the mode of this data set: ${list}`, md,
+        `The mode is the value that appears most often: ${md} appears ${data.filter(x => x === md).length} times.`);
     }
-    if (shape === 'composite-area') {
-      const L = randInt(10, 25), W = randInt(10, 25);
-      const l = randInt(2, L - 3), w = randInt(2, W - 3);
-      const area = L * W - l * w;
-      return mkGeom('composite-area', `A rectangle is ${L} cm by ${W} cm. A smaller ${l} cm by ${w} cm rectangle is cut out of one corner. What is the area of the remaining shape?`,
-        'Enter a number (cm²).', area, 0.01, `${area} cm²`,
-        `Decompose: whole rectangle area is ${L} × ${W} = ${L * W} cm². Subtract the cut-out piece, ${l} × ${w} = ${l * w} cm². ${L * W} − ${l * w} = ${area} cm².`);
+    return makeNum('data', `Find the range of this data set: ${list}`, sorted[sorted.length - 1] - sorted[0],
+      `Range = greatest value − least value = ${n2s(sorted[sorted.length - 1])} − ${n2s(sorted[0])} = ${n2s(sorted[sorted.length - 1] - sorted[0])}.`);
+  }
+  function missingMean6() {
+    const n = randInt(4, 6), m = randInt(60, 90);
+    for (let i = 0; i < 100; i++) {
+      const vals = Array.from({ length: n - 1 }, () => randInt(m - 12, Math.min(100, m + 12)));
+      const last = n * m - vals.reduce((s, x) => s + x, 0);
+      if (last < 30 || last > 100) continue;
+      return makeNum('data', `The mean of ${n} test scores is ${m}. ${n - 1} of the scores are ${vals.join(', ')}. What is the other score?`, last,
+        `Total of all ${n} scores = ${n} × ${m} = ${n * m}. The known scores add to ${vals.reduce((s, x) => s + x, 0)}. Missing score = ${n * m} − ${vals.reduce((s, x) => s + x, 0)} = ${last}.`, { hint: 'Enter a number.' });
     }
-    if (shape === 'prism-surface-area') {
+    return missingMean6();
+  }
+  function compareSets6() {
+    for (let i = 0; i < 100; i++) {
+      const A = Array.from({ length: 6 }, () => randInt(40, 100)), B = Array.from({ length: 6 }, () => randInt(40, 100));
+      const rA = Math.max(...A) - Math.min(...A), rB = Math.max(...B) - Math.min(...B);
+      const mA = meanOf(A), mB = meanOf(B);
+      if (Math.random() < 0.5) {
+        if (rA === rB) continue;
+        const w = rA > rB ? 'A' : 'B';
+        return makeText('data', `Class A scores: ${A.join(', ')}. Class B scores: ${B.join(', ')}. Which class has the greater range?`, [w.toLowerCase(), 'class ' + w.toLowerCase()], `Class ${w}`,
+          `Range A = ${Math.max(...A)} − ${Math.min(...A)} = ${rA}. Range B = ${Math.max(...B)} − ${Math.min(...B)} = ${rB}. Class ${w} has the greater range.`, { hint: 'Type A or B.' });
+      }
+      if (Math.abs(mA - mB) < 0.5) continue;
+      const w = mA > mB ? 'A' : 'B';
+      return makeText('data', `Class A scores: ${A.join(', ')}. Class B scores: ${B.join(', ')}. Which class has the greater mean?`, [w.toLowerCase(), 'class ' + w.toLowerCase()], `Class ${w}`,
+        `Mean A = ${n2s(A.reduce((s, x) => s + x, 0))} ÷ 6 = ${mA.toFixed(2)}. Mean B = ${n2s(B.reduce((s, x) => s + x, 0))} ÷ 6 = ${mB.toFixed(2)}. Class ${w} has the greater mean.`, { hint: 'Type A or B.' });
+    }
+    return compareSets6();
+  }
+  const DATA_TYPES = [
+    ['the number of pets in a household', 'discrete'], ['the height of students in a class', 'continuous'],
+    ['the time it takes to run 100 m', 'continuous'], ['the number of siblings a student has', 'discrete'],
+    ['the mass of a backpack', 'continuous'], ['the number of goals scored in a game', 'discrete'],
+    ['the temperature outside at noon', 'continuous'], ['the number of books on a shelf', 'discrete'],
+    ['the distance a student travels to school', 'continuous'], ['the number of students absent today', 'discrete']
+  ];
+  function discreteContinuous6() {
+    const [what, ans] = pick(DATA_TYPES);
+    return makeText('data', `Is ${what} discrete data or continuous data?`, [ans], ans,
+      ans === 'discrete' ? `${what.charAt(0).toUpperCase() + what.slice(1)} can be counted using whole numbers, so it is discrete data.` : `${what.charAt(0).toUpperCase() + what.slice(1)} can take any value in a range (including decimals and fractions), so it is continuous data.`,
+      { hint: 'Type discrete or continuous.' });
+  }
+  const GRAPH_SCENARIOS = [
+    ['how the temperature at noon changed each day over a week', 'broken-line graph'],
+    ['how many students chose each of five school clubs', 'bar graph'],
+    ['the heights (in cm) of 40 students grouped into intervals', 'histogram'],
+    ['how Maya\'s savings changed over 8 months', 'broken-line graph'],
+    ['the number of goals scored by each of six players', 'bar graph'],
+    ['the masses (in kg) of 30 dogs grouped into intervals of 5 kg', 'histogram']
+  ];
+  function chooseGraph6() {
+    const [what, ans] = pick(GRAPH_SCENARIOS);
+    const opts = shuffle(['bar graph', 'histogram', 'broken-line graph']);
+    const letter = 'ABC'[opts.indexOf(ans)];
+    return makeText('data', `Which graph is best for showing ${what}?  A) ${opts[0]}   B) ${opts[1]}   C) ${opts[2]}`, [letter.toLowerCase(), ans], `${letter}) ${ans}`,
+      ans === 'broken-line graph' ? 'A broken-line graph shows change over time.' : ans === 'histogram' ? 'A histogram shows continuous data grouped in intervals (the bars touch).' : 'A bar graph compares separate categories of discrete data.',
+      { hint: 'Type the letter (A, B, or C).' });
+  }
+  function readBar6() {
+    const sets = [['Favourite sport', ['Soccer', 'Hockey', 'Swimming', 'Tennis', 'Baseball']], ['Pets owned', ['Dogs', 'Cats', 'Fish', 'Birds', 'Rabbits']]];
+    const [title, labels] = pick(sets);
+    const values = labels.map(() => randInt(2, 12) * 2);
+    const i = randInt(0, 4); let j = randInt(0, 4);
+    while (j === i) j = randInt(0, 4);
+    const visual = svgBar(labels, values, { title, yTitle: 'Number of students', step: 4, max: Math.max(...values) });
+    if (Math.random() < 0.5) {
+      return makeNum('data', `The bar graph shows the results of a survey. How many more students chose ${labels[i]} than ${labels[j]}? (If fewer, enter a negative number.)`, values[i] - values[j],
+        `Read the bars: ${labels[i]} = ${values[i]} and ${labels[j]} = ${values[j]}. ${values[i]} − ${values[j]} = ${values[i] - values[j]}.`, { visual });
+    }
+    return makeNum('data', 'The bar graph shows the results of a survey. How many students were surveyed in total?', values.reduce((s, x) => s + x, 0),
+      `Add all the bars: ${values.join(' + ')} = ${values.reduce((s, x) => s + x, 0)}.`, { visual });
+  }
+  function readLine6() {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const vals = [randInt(8, 16)];
+    for (let i = 1; i < days.length; i++) vals.push(Math.max(2, Math.min(28, vals[i - 1] + randInt(-5, 6))));
+    const visual = svgLine(days, vals, { title: 'Temperature at noon (°C)', yTitle: '°C', step: 5, max: 30 });
+    const diffs = vals.slice(1).map((v, i) => v - vals[i]);
+    const maxInc = Math.max(...diffs);
+    if (maxInc > 0 && Math.random() < 0.6) {
+      return makeNum('data', 'The broken-line graph shows the temperature at noon each day. What was the greatest increase in temperature from one day to the next?', maxInc,
+        `Subtract each day from the next: ${diffs.join(', ')}. The greatest increase is ${maxInc}°C.`, { visual, units: units('degC', 'deg') });
+    }
+    const k = randInt(0, 5);
+    return makeNum('data', `The broken-line graph shows the temperature at noon each day. What was the temperature on ${days[k]}, in °C?`, vals[k],
+      `Read the point above ${days[k]}: ${vals[k]}°C.`, { visual, units: units('degC', 'deg') });
+  }
+  function readHistogram6() {
+    const bins = [['140–149', 0], ['150–159', 0], ['160–169', 0], ['170–179', 0], ['180–189', 0]];
+    const counts = [randInt(1, 4), randInt(4, 10), randInt(6, 14), randInt(3, 9), randInt(1, 4)];
+    const labels = bins.map(b => b[0]);
+    const visual = svgBar(labels, counts, { title: 'Heights of students (cm)', yTitle: 'Number of students', histogram: true, step: 2, max: Math.max(...counts) });
+    const t = randInt(1, 3);
+    if (t === 1) return makeNum('data', 'The histogram shows the heights of some students. How many students are 160 cm or taller?', counts[2] + counts[3] + counts[4],
+      `Add the bars for 160–169, 170–179 and 180–189: ${counts[2]} + ${counts[3]} + ${counts[4]} = ${counts[2] + counts[3] + counts[4]}.`, { visual });
+    if (t === 2) return makeNum('data', 'The histogram shows the heights of some students. How many students were measured in total?', counts.reduce((s, x) => s + x, 0),
+      `Add all the bars: ${counts.join(' + ')} = ${counts.reduce((s, x) => s + x, 0)}.`, { visual });
+    return makeNum('data', 'The histogram shows the heights of some students. How many students are shorter than 160 cm?', counts[0] + counts[1],
+      `Add the bars for 140–149 and 150–159: ${counts[0]} + ${counts[1]} = ${counts[0] + counts[1]}.`, { visual });
+  }
+  function impact7() {
+    for (let i = 0; i < 300; i++) {
+      const n = randInt(5, 7);
+      const vals = Array.from({ length: n }, () => randInt(5, 30));
+      const sum = vals.reduce((s, x) => s + x, 0);
+      const t = randInt(1, 3);
+      if (t === 1) {
+        const cands = [];
+        for (let v = 1; v <= 90; v++) if ((sum + v) % (n + 1) === 0 && Math.abs(v - meanOf(vals)) > 12) cands.push(v);
+        if (!cands.length) continue;
+        const v = pick(cands), nm = (sum + v) / (n + 1);
+        return makeNum('data', `A data set is ${vals.join(', ')}. The mean is ${n2s(meanOf(vals))}. A new value, ${v}, is added to the data set. What is the new mean?`, nm,
+          `New total = ${sum} + ${v} = ${sum + v}. There are now ${n + 1} values. New mean = ${sum + v} ÷ ${n + 1} = ${n2s(nm)}.`, { tol: 0.01 });
+      }
+      if (t === 2) {
+        const idx = randInt(0, n - 1), v = vals[idx];
+        if ((sum - v) % (n - 1) !== 0) continue;
+        const nm = (sum - v) / (n - 1);
+        return makeNum('data', `A data set is ${vals.join(', ')}. The value ${v} is removed. What is the new mean?`, nm,
+          `New total = ${sum} − ${v} = ${sum - v}. There are now ${n - 1} values. New mean = ${sum - v} ÷ ${n - 1} = ${n2s(nm)}.`, { tol: 0.01 });
+      }
+      const v = randInt(70, 120);
+      const nmed = medianOf([...vals, v]);
+      return makeNum('data', `A data set is ${vals.join(', ')}. A very large value, ${v}, is added to the data set. What is the new median?`, nmed,
+        `Put all ${n + 1} values in order: ${[...vals, v].sort((a, b) => a - b).join(', ')}. The median is ${n2s(nmed)}.`, { tol: 0.01 });
+    }
+    return impact7();
+  }
+  function percentDist7() {
+    const T = pick([20, 25, 40, 50, 80, 200]);
+    const k = randInt(1, T - 1);
+    const pct = r6(k / T * 100);
+    const what = pick(['soccer', 'pizza', 'swimming', 'the library', 'math']);
+    return makeNum('data', `In a survey of ${T} students, ${k} chose ${what} as their favourite. What percent of the students chose ${what}?`, pct,
+      `(${k} ÷ ${T}) × 100 = ${n2s(pct)}%.`, { display: `${n2s(pct)}%`, hint: 'Enter a number (the percent), e.g. 25 for 25%.' });
+  }
+  function circleRead7() {
+    const N = randInt(2, 10) * 20;
+    const labels = pick([['Bus', 'Walk', 'Car', 'Bike'], ['Pizza', 'Pasta', 'Tacos', 'Salad'], ['Soccer', 'Hockey', 'Swimming', 'Tennis']]);
+    for (let i = 0; i < 100; i++) {
+      const pcts = Array.from({ length: 3 }, () => randInt(2, 8) * 5);
+      const last = 100 - pcts.reduce((s, x) => s + x, 0);
+      if (last < 5 || last % 5 !== 0) continue;
+      const all = [...pcts, last];
+      const k = randInt(0, 3);
+      const visual = svgPie(labels, all, { title: `Survey of ${N} students` });
+      const cnt = N * all[k] / 100;
+      return makeNum('data', `The circle graph shows the results of a survey of ${N} students. How many students chose ${labels[k]}?`, cnt,
+        `${labels[k]} is ${all[k]}% of the students: ${all[k]}% of ${N} = ${all[k]} ÷ 100 × ${N} = ${n2s(cnt)}.`, { visual });
+    }
+    return circleRead7();
+  }
+  function circleAngle7() {
+    const p = randInt(1, 18) * 5;
+    return makeNum('data', `In a circle graph, what central angle represents ${p}% of the data?`, r6(p * 3.6),
+      `A full circle is 360°. ${p}% of 360° = ${p / 100} × 360 = ${n2s(p * 3.6)}°.`, { units: units('deg'), display: `${n2s(p * 3.6)}°`, hint: 'Enter the angle in degrees.' });
+  }
+  GENERATORS.data = {
+    6: [() => statProblem('mean', 6), () => statProblem('median', 6), () => statProblem('mode', 6), () => statProblem('range', 6),
+      missingMean6, compareSets6, discreteContinuous6, chooseGraph6, readBar6, readLine6, readHistogram6],
+    7: [() => statProblem('mean', 7), () => statProblem('median', 7), () => statProblem('range', 7), impact7, impact7, percentDist7,
+      circleRead7, circleRead7, circleAngle7, missingMean6]
+  };
+
+  // =====================================================================
+  // DATA: probability (D2.1, D2.2)
+  //   Gr 6: fractions/decimals/percents, theoretical vs experimental,
+  //         two independent events
+  //   Gr 7: independent vs dependent events and their probabilities
+  // =====================================================================
+  function probDisplay(n, d) {
+    const r = reduceFrac(n, d), pct = n / d * 100;
+    return `${fracStr(r.n, r.d)} (${Number.isInteger(pct) ? pct : pct.toFixed(1)}%)`;
+  }
+  const PROB_OPTS = { tol: 0.005, tolPct: 0.5 };
+  function probRat(q, n, d, sol, visual) {
+    return makeRat('probability', q, n / d, sol, Object.assign({ display: probDisplay(n, d), visual }, PROB_OPTS));
+  }
+  function probBag6() {
+    const counts = { red: randInt(1, 6), blue: randInt(1, 6), green: randInt(1, 6) };
+    const T = counts.red + counts.blue + counts.green;
+    const color = pick(['red', 'blue', 'green']);
+    const not = Math.random() < 0.3;
+    const n = not ? T - counts[color] : counts[color];
+    return probRat(`A bag has ${counts.red} red, ${counts.blue} blue and ${counts.green} green marbles. One marble is picked at random. What is the probability of picking ${not ? 'a marble that is not ' : 'a '}${color}${not ? '' : ' marble'}? (Fraction, decimal, or percent.)`, n, T,
+      `Probability = favourable outcomes ÷ total outcomes = ${n} ÷ ${T} = ${probDisplay(n, T)}.`);
+  }
+  function probTwoIndep6() {
+    const t = randInt(1, 5);
+    if (t === 1) {
+      const k = randInt(1, 6);
+      return probRat(`A coin is flipped and a die is rolled. What is the probability of getting heads and a ${k}?`, 1, 12,
+        `P(heads) = 1/2 and P(${k}) = 1/6, so P(both) = 1/2 × 1/6 = 1/12. (A tree diagram shows 2 × 6 = 12 equally likely outcomes.)`);
+    }
+    if (t === 2) {
+      const s = randInt(2, 12), ways = 6 - Math.abs(s - 7);
+      return probRat(`Two dice are rolled. What is the probability that the sum is ${s}?`, ways, 36,
+        `There are 6 × 6 = 36 equally likely outcomes. ${ways} of them have a sum of ${s}. P = ${ways}/36 = ${probDisplay(ways, 36)}.`);
+    }
+    if (t === 3) {
+      const k = randInt(3, 8);
+      return makeNum('probability', `A coin is flipped and a spinner with ${k} equal sections is spun. How many different outcomes are possible?`, 2 * k,
+        `Use a tree diagram or multiply: 2 × ${k} = ${2 * k} outcomes.`, { hint: 'Enter a number.' });
+    }
+    if (t === 4) {
+      return probRat('A coin is flipped twice. What is the probability of getting two heads?', 1, 4,
+        'P(heads) = 1/2 each time, so P(two heads) = 1/2 × 1/2 = 1/4.');
+    }
+    const k = randInt(2, 5), j = randInt(2, 5);
+    return probRat(`Two spinners are each divided into equal sections. Spinner 1 has ${k} sections and Spinner 2 has ${j} sections. What is the probability of landing on one particular section on each spinner?`, 1, k * j,
+      `P = 1/${k} × 1/${j} = 1/${k * j}.`);
+  }
+  function probExperimental6() {
+    const t = randInt(1, 3);
+    if (t === 1) {
+      const n = pick([20, 25, 40, 50, 80, 100]);
+      const k = randInt(2, n - 2);
+      return probRat(`A spinner was spun ${n} times and landed on red ${k} times. What is the experimental probability of landing on red? (Fraction, decimal, or percent.)`, k, n,
+        `Experimental probability = number of times it happened ÷ number of trials = ${k} ÷ ${n} = ${probDisplay(k, n)}.`);
+    }
+    if (t === 2) {
+      const n = randInt(2, 20) * 6;
+      return makeNum('probability', `The theoretical probability of rolling a 6 on a die is 1/6. If a die is rolled ${n} times, about how many 6s would you expect?`, n / 6,
+        `Expected number = probability × number of trials = 1/6 × ${n} = ${n / 6}.`, { hint: 'Enter a number.' });
+    }
+    const n = pick([40, 50, 60, 100]), k = randInt(Math.floor(n * 0.3), Math.ceil(n * 0.7));
+    return probRat(`A coin was flipped ${n} times and landed heads ${k} times. What is the experimental probability of heads? (Fraction, decimal, or percent.)`, k, n,
+      `${k} ÷ ${n} = ${probDisplay(k, n)}. (The theoretical probability is 1/2 = 50%.)`);
+  }
+  const INDEP_SCENARIOS = [
+    ['A coin is flipped twice.', true], ['A die is rolled and then a coin is flipped.', true],
+    ['A marble is drawn from a bag, put back, and then a second marble is drawn.', true], ['A spinner is spun twice.', true],
+    ['Two cards are drawn one after the other from a deck, and the first card is not put back.', false],
+    ['Two marbles are drawn from a bag one after the other, and the first marble is kept out of the bag.', false],
+    ['A student is chosen as president of a class, and then a different student is chosen as vice-president.', false]
+  ];
+  function probIndepDep7() {
+    const [s, indep] = pick(INDEP_SCENARIOS);
+    return makeText('probability', `Are the two events independent or dependent? ${s}`, [indep ? 'independent' : 'dependent'], indep ? 'independent' : 'dependent',
+      indep ? 'The outcome of the first event does not change the probabilities of the second event, so the events are independent.'
+        : 'The first event changes what is left for the second event, so the probability of the second event depends on the first. The events are dependent.',
+      { hint: 'Type independent or dependent.' });
+  }
+  function probBagTwo7() {
+    const R = randInt(2, 6), B = randInt(2, 6), T = R + B;
+    const withRep = Math.random() < 0.5;
+    const same = Math.random() < 0.5;
+    if (withRep) {
+      const n = same ? R * R : R * B, d = T * T;
+      return probRat(`A bag has ${R} red and ${B} blue marbles. Two marbles are drawn at random, and the first marble is put back before the second is drawn. What is the probability of drawing ${same ? 'two red marbles' : 'a red marble and then a blue marble'}? (Fraction, decimal, or percent.)`, n, d,
+        `The events are independent. P = ${R}/${T} × ${same ? R : B}/${T} = ${n}/${d} = ${probDisplay(n, d)}.`);
+    }
+    const n = same ? R * (R - 1) : R * B, d = T * (T - 1);
+    return probRat(`A bag has ${R} red and ${B} blue marbles. Two marbles are drawn at random, and the first marble is not put back. What is the probability of drawing ${same ? 'two red marbles' : 'a red marble and then a blue marble'}? (Fraction, decimal, or percent.)`, n, d,
+      `The events are dependent. P = ${R}/${T} × ${same ? R - 1 : B}/${T - 1} = ${n}/${d} = ${probDisplay(n, d)}.`);
+  }
+  function probExperimental7() {
+    const t = randInt(1, 3);
+    if (t === 1) {
+      const n = pick([80, 100, 120, 200]), k = randInt(Math.floor(n * 0.15), Math.ceil(n * 0.35));
+      return probRat(`Two coins are flipped ${n} times. Both coins land heads ${k} times. What is the experimental probability of getting two heads? (Fraction, decimal, or percent.)`, k, n,
+        `${k} ÷ ${n} = ${probDisplay(k, n)}. (The theoretical probability is 1/4 = 25%.)`);
+    }
+    if (t === 2) {
+      const n = randInt(4, 40) * 6;
+      return makeNum('probability', `The theoretical probability of rolling a sum of 7 with two dice is 1/6. About how many times would you expect a sum of 7 in ${n} rolls?`, n / 6,
+        `Expected number = 1/6 × ${n} = ${n / 6}.`, { hint: 'Enter a number.' });
+    }
+    const n = randInt(2, 25) * 4;
+    return makeNum('probability', `The theoretical probability of two coins both landing heads is 1/4. In ${n} trials, about how many times would you expect both coins to land heads?`, n / 4,
+      `Expected number = 1/4 × ${n} = ${n / 4}.`, { hint: 'Enter a number.' });
+  }
+  GENERATORS.probability = {
+    6: [probBag6, probBag6, probTwoIndep6, probTwoIndep6, probExperimental6, probExperimental6],
+    7: [probIndepDep7, probIndepDep7, probBagTwo7, probBagTwo7, probExperimental7, probTwoIndep6]
+  };
+
+  // =====================================================================
+  // SPATIAL SENSE: geometry (E1.1 geometric reasoning)
+  //   Gr 6: properties of quadrilaterals (diagonals, symmetry)
+  //   Gr 7: classifying prisms, pyramids and cylinders
+  // =====================================================================
+  const QUADS = {
+    square: { lines: 4, rot: 4, par: 2, eqd: true, perp: true, bis: true },
+    rectangle: { lines: 2, rot: 2, par: 2, eqd: true, perp: false, bis: true },
+    rhombus: { lines: 2, rot: 2, par: 2, eqd: false, perp: true, bis: true },
+    parallelogram: { lines: 0, rot: 2, par: 2, eqd: false, perp: false, bis: true },
+    kite: { lines: 1, rot: 1, par: 0, eqd: false, perp: true, bis: false },
+    'isosceles trapezoid': { lines: 1, rot: 1, par: 1, eqd: true, perp: false, bis: false }
+  };
+  function article(word) { return /^[aeiou]/i.test(word) ? 'an' : 'a'; }
+  function quadLines6() {
+    const name = pick(Object.keys(QUADS));
+    return makeNum('geometry', `How many lines of symmetry does ${article(name)} ${name} have?`, QUADS[name].lines,
+      `A line of symmetry splits a shape into two matching halves. ${name.charAt(0).toUpperCase() + name.slice(1)}s have ${QUADS[name].lines}.`, { hint: 'Enter a number.' });
+  }
+  function quadRot6() {
+    const name = pick(['square', 'rectangle', 'rhombus', 'parallelogram']);
+    return makeNum('geometry', `What is the order of rotational symmetry of ${article(name)} ${name}? (How many times does it match itself in one full turn?)`, QUADS[name].rot,
+      `The ${name} matches itself ${QUADS[name].rot} times in one full 360° turn.`, { hint: 'Enter a number.' });
+  }
+  function quadParallel6() {
+    const name = pick(Object.keys(QUADS));
+    return makeNum('geometry', `How many pairs of parallel sides does ${article(name)} ${name} have?`, QUADS[name].par,
+      `${name.charAt(0).toUpperCase() + name.slice(1)}${name === 'rhombus' ? 'es' : 's'} have ${QUADS[name].par} ${plural(QUADS[name].par, 'pair', 'pairs')} of parallel sides.`, { hint: 'Enter a number.' });
+  }
+  function quadDiagonals6() {
+    const name = pick(Object.keys(QUADS));
+    const which = pick(['eqd', 'perp', 'bis']);
+    const text = {
+      eqd: `Are the diagonals of ${article(name)} ${name} equal in length?`,
+      perp: `Are the diagonals of ${article(name)} ${name} perpendicular to each other?`,
+      bis: `Do the diagonals of ${article(name)} ${name} bisect each other (cut each other in half)?`
+    };
+    const yes = QUADS[name][which];
+    return makeYesNo('geometry', text[which], yes, `For ${article(name)} ${name}, the answer is ${yes ? 'yes' : 'no'}.`);
+  }
+  const PRISM_BASES = { 3: 'triangular', 4: 'rectangular', 5: 'pentagonal', 6: 'hexagonal', 7: 'heptagonal', 8: 'octagonal' };
+  const PYR_BASES = { 3: 'triangular', 4: 'square', 5: 'pentagonal', 6: 'hexagonal', 7: 'heptagonal' };
+  function solid3d7() {
+    const prism = Math.random() < 0.5;
+    const n = prism ? randInt(3, 8) : randInt(3, 7);
+    const name = prism ? `${PRISM_BASES[n]} prism` : `${PYR_BASES[n]} pyramid`;
+    const counts = prism ? { faces: n + 2, edges: 3 * n, vertices: 2 * n } : { faces: n + 1, edges: 2 * n, vertices: n + 1 };
+    const what = pick(['faces', 'edges', 'vertices']);
+    const why = prism
+      ? { faces: `A prism has 2 bases plus ${n} side faces: ${n} + 2 = ${n + 2}.`, edges: `A prism has ${n} edges on each base plus ${n} edges joining them: 3 × ${n} = ${3 * n}.`, vertices: `Each base has ${n} vertices: 2 × ${n} = ${2 * n}.` }
+      : { faces: `A pyramid has 1 base plus ${n} triangular faces: ${n} + 1 = ${n + 1}.`, edges: `${n} edges on the base plus ${n} edges up to the apex: 2 × ${n} = ${2 * n}.`, vertices: `${n} base vertices plus the apex: ${n} + 1 = ${n + 1}.` };
+    return makeNum('geometry', `How many ${what} does ${article(name)} ${name} have?`, counts[what], why[what], { hint: 'Enter a number.' });
+  }
+  function solidReverse7() {
+    const n = randInt(3, 8);
+    if (Math.random() < 0.5) {
+      return makeNum('geometry', `A prism has ${2 * n} vertices. How many sides does each base have?`, n,
+        `A prism has 2 bases, each with the same number of vertices: ${2 * n} ÷ 2 = ${n}.`, { hint: 'Enter a number.' });
+    }
+    return makeNum('geometry', `A pyramid has ${2 * n} edges. How many sides does its base have?`, n,
+      `A pyramid has twice as many edges as base sides (base edges + edges to the apex): ${2 * n} ÷ 2 = ${n}.`, { hint: 'Enter a number.' });
+  }
+  GENERATORS.geometry = {
+    6: [quadLines6, quadRot6, quadParallel6, quadDiagonals6, quadDiagonals6, quadLines6],
+    7: [solid3d7, solid3d7, solid3d7, solidReverse7]
+  };
+
+  // =====================================================================
+  // SPATIAL SENSE: coordinates & transformations
+  //   Gr 6: E1.3 four quadrants, translations between points;
+  //         E1.4 combinations of translations, reflections, rotations
+  //   Gr 7: E1.3 dilations; E1.4 transformations on a Cartesian plane
+  // =====================================================================
+  function ptStr(p) { return `(${p[0]}, ${p[1]})`; }
+  function randPoint(R) { return [randInt(-R, R), randInt(-R, R)]; }
+  function coordQuadrant6() {
+    let x = 0, y = 0;
+    while (x === 0 || y === 0) { x = randInt(-9, 9); y = randInt(-9, 9); }
+    const q = x > 0 && y > 0 ? 1 : x < 0 && y > 0 ? 2 : x < 0 && y < 0 ? 3 : 4;
+    return makeNum('coordinates', `In which quadrant is the point (${x}, ${y})? (Enter 1, 2, 3, or 4.)`, q,
+      `x is ${x > 0 ? 'positive' : 'negative'} and y is ${y > 0 ? 'positive' : 'negative'}. Quadrant 1 is (+, +), 2 is (−, +), 3 is (−, −), 4 is (+, −), so the point is in quadrant ${q}.`,
+      { hint: 'Enter 1, 2, 3, or 4.' });
+  }
+  function coordRead6() {
+    let p = randPoint(7);
+    while (p[0] === 0 && p[1] === 0) p = randPoint(7);
+    return makePoint('coordinates', 'What are the coordinates of point P?', p[0], p[1],
+      `Start at the origin. Move ${Math.abs(p[0])} ${p[0] >= 0 ? 'right' : 'left'}, then ${Math.abs(p[1])} ${p[1] >= 0 ? 'up' : 'down'}: ${ptStr(p)}.`,
+      { visual: svgPlane([{ x: p[0], y: p[1], label: 'P' }]) });
+  }
+  function coordTranslate() {
+    const p = randPoint(6);
+    const dx = randInt(-6, 6), dy = randInt(-6, 6);
+    if (dx === 0 && dy === 0) return coordTranslate();
+    const parts = [];
+    if (dx !== 0) parts.push(`${Math.abs(dx)} ${plural(Math.abs(dx), 'unit', 'units')} ${dx > 0 ? 'right' : 'left'}`);
+    if (dy !== 0) parts.push(`${Math.abs(dy)} ${plural(Math.abs(dy), 'unit', 'units')} ${dy > 0 ? 'up' : 'down'}`);
+    return makePoint('coordinates', `Point A is at ${ptStr(p)}. It is translated ${parts.join(' and ')}. What are the coordinates of the new point A′?`, p[0] + dx, p[1] + dy,
+      `Right/left changes x, up/down changes y: (${p[0]} ${dx >= 0 ? '+' : '−'} ${Math.abs(dx)}, ${p[1]} ${dy >= 0 ? '+' : '−'} ${Math.abs(dy)}) = (${p[0] + dx}, ${p[1] + dy}).`,
+      { visual: svgPlane([{ x: p[0], y: p[1], label: 'A' }]) });
+  }
+  function coordFindTranslation6() {
+    const a = randPoint(7), b = randPoint(7);
+    if (a[0] === b[0] && a[1] === b[1]) return coordFindTranslation6();
+    return makePoint('coordinates', `A point moves from ${ptStr(a)} to ${ptStr(b)}. Describe the translation as (right, up). Use negative numbers for left or down.`, b[0] - a[0], b[1] - a[1],
+      `Horizontal change: ${b[0]} − ${a[0]} = ${b[0] - a[0]}. Vertical change: ${b[1]} − ${a[1]} = ${b[1] - a[1]}. The translation is (${b[0] - a[0]}, ${b[1] - a[1]}).`,
+      { hint: 'Enter (right, up), e.g. (-3, 2).', visual: svgPlane([{ x: a[0], y: a[1], label: 'A' }, { x: b[0], y: b[1], label: 'B' }]) });
+  }
+  function coordReflect() {
+    let p = randPoint(7);
+    while (p[0] === 0 || p[1] === 0) p = randPoint(7);
+    const axis = pick(['x', 'y']);
+    const img = axis === 'x' ? [p[0], -p[1]] : [-p[0], p[1]];
+    return makePoint('coordinates', `Reflect the point ${ptStr(p)} in the ${axis}-axis. What are the coordinates of the image?`, img[0], img[1],
+      axis === 'x' ? `A reflection in the x-axis flips the point over the x-axis: the y-coordinate changes sign. (${p[0]}, ${p[1]}) → ${ptStr(img)}.`
+        : `A reflection in the y-axis flips the point over the y-axis: the x-coordinate changes sign. (${p[0]}, ${p[1]}) → ${ptStr(img)}.`,
+      { visual: svgPlane([{ x: p[0], y: p[1], label: 'A' }]) });
+  }
+  function rotatePoint(p, angleCcw) {
+    const a = ((angleCcw % 360) + 360) % 360;
+    if (a === 90) return [-p[1], p[0]];
+    if (a === 180) return [-p[0], -p[1]];
+    if (a === 270) return [p[1], -p[0]];
+    return [p[0], p[1]];
+  }
+  function coordRotate() {
+    let p = randPoint(7);
+    while (p[0] === 0 && p[1] === 0) p = randPoint(7);
+    const angle = pick([90, 180, 270, 360]);
+    const cw = Math.random() < 0.4 && angle !== 360;
+    const img = rotatePoint(p, cw ? -angle : angle);
+    const rule = { 90: '(x, y) → (−y, x)', 180: '(x, y) → (−x, −y)', 270: '(x, y) → (y, −x)', 360: 'a full turn returns the point to where it started' };
+    const eff = cw ? (360 - angle) % 360 : angle;
+    return makePoint('coordinates', `Rotate the point ${ptStr(p)} ${angle}° ${cw ? 'clockwise' : 'counterclockwise'} about the origin. What are the coordinates of the image?`, img[0], img[1],
+      `${cw ? `A ${angle}° clockwise turn is the same as a ${eff}° counterclockwise turn. ` : ''}For a ${eff === 0 ? 360 : eff}° counterclockwise rotation about the origin, ${rule[eff === 0 ? 360 : eff]}. So ${ptStr(p)} → ${ptStr(img)}.`,
+      { visual: svgPlane([{ x: p[0], y: p[1], label: 'A' }]) });
+  }
+  function coordCombo6() {
+    let p = randPoint(5);
+    while (p[0] === 0 || p[1] === 0) p = randPoint(5);
+    const axis = pick(['x', 'y']);
+    const r = axis === 'x' ? [p[0], -p[1]] : [-p[0], p[1]];
+    const dx = randInt(-4, 4), dy = randInt(-4, 4);
+    const parts = [];
+    if (dx !== 0) parts.push(`${Math.abs(dx)} ${dx > 0 ? 'right' : 'left'}`);
+    if (dy !== 0) parts.push(`${Math.abs(dy)} ${dy > 0 ? 'up' : 'down'}`);
+    if (!parts.length) return coordCombo6();
+    return makePoint('coordinates', `The point ${ptStr(p)} is reflected in the ${axis}-axis, and then the image is translated ${parts.join(' and ')}. What are the final coordinates?`, r[0] + dx, r[1] + dy,
+      `Step 1, reflect in the ${axis}-axis: ${ptStr(p)} → ${ptStr(r)}. Step 2, translate: ${ptStr(r)} → (${r[0] + dx}, ${r[1] + dy}).`,
+      { visual: svgPlane([{ x: p[0], y: p[1], label: 'A' }]) });
+  }
+  function coordDilate7() {
+    const k = pick([2, 3, 4, 0.5, 1.5, 2.5]);
+    let p;
+    do { p = randPoint(k < 1 || k % 1 ? 8 : 4).map(v => (k % 1 ? v - (v % 2) : v)); } while (p[0] === 0 && p[1] === 0);
+    const img = [r6(p[0] * k), r6(p[1] * k)];
+    if (Math.abs(img[0]) > 16 || Math.abs(img[1]) > 16) return coordDilate7();
+    return makePoint('coordinates', `The point ${ptStr(p)} is dilated by a scale factor of ${k} about the origin. What are the coordinates of the image?`, img[0], img[1],
+      `Multiply each coordinate by the scale factor ${k}: (${p[0]} × ${k}, ${p[1]} × ${k}) = ${ptStr(img)}.`);
+  }
+  function coordScaleFactor7() {
+    const k = pick([2, 3, 4, 5]);
+    let p = randPoint(4);
+    while (p[0] === 0 && p[1] === 0) p = randPoint(4);
+    const nz = p[0] !== 0 ? p[0] : p[1];
+    return makeNum('coordinates', `A shape is dilated about the origin. The point ${ptStr(p)} on the original shape moves to ${ptStr([p[0] * k, p[1] * k])} on the image. What is the scale factor?`, k,
+      `Scale factor = image coordinate ÷ original coordinate = ${nz * k} ÷ ${nz} = ${k}.`, { hint: 'Enter a number.' });
+  }
+  function coordCombo7() {
+    let p = randPoint(5);
+    while (p[0] === 0 && p[1] === 0) p = randPoint(5);
+    const angle = pick([90, 180, 270]);
+    const r = rotatePoint(p, angle);
+    const axis = pick(['x', 'y']);
+    const f = axis === 'x' ? [r[0], -r[1]] : [-r[0], r[1]];
+    return makePoint('coordinates', `The point ${ptStr(p)} is rotated ${angle}° counterclockwise about the origin, and then the image is reflected in the ${axis}-axis. What are the final coordinates?`, f[0], f[1],
+      `Step 1, rotate ${angle}° counterclockwise: ${ptStr(p)} → ${ptStr(r)}. Step 2, reflect in the ${axis}-axis: ${ptStr(r)} → ${ptStr(f)}.`);
+  }
+  GENERATORS.coordinates = {
+    6: [coordQuadrant6, coordRead6, coordRead6, coordTranslate, coordFindTranslation6, coordReflect, coordRotate, coordCombo6],
+    7: [coordTranslate, coordReflect, coordRotate, coordDilate7, coordDilate7, coordScaleFactor7, coordCombo7]
+  };
+
+  // =====================================================================
+  // SPATIAL SENSE: measurement (E2)
+  //   Gr 6: metric conversions, angle relationships, area of trapezoids,
+  //         rhombuses, kites and composite polygons, surface area of prisms
+  //         and pyramids
+  //   Gr 7: volume/capacity, converting perimeter/area/volume units, circles,
+  //         volume and surface area of prisms and cylinders
+  //   (Pi is taken as 3.14 throughout.)
+  // =====================================================================
+  const PI = 3.14;
+  function metricConvert6() {
+    const sets = [
+      { kind: 'length', pairs: [['km', 'm', 1000], ['m', 'cm', 100], ['cm', 'mm', 10], ['m', 'mm', 1000]] },
+      { kind: 'mass', pairs: [['kg', 'g', 1000]] },
+      { kind: 'capacity', pairs: [['L', 'mL', 1000]] }
+    ];
+    const set = pick([sets[0], sets[0], sets[1], sets[2]]);
+    const [big, small, f] = pick(set.pairs);
+    const toSmall = Math.random() < 0.5;
+    if (toSmall) {
+      const v = Math.random() < 0.5 ? randInt(2, 90) : randInt(11, 99) / 10;
+      return makeNum('measurement', `Convert ${v} ${big} to ${small}.`, r6(v * f),
+        `1 ${big} = ${f} ${small}. Going to a smaller unit gives a larger number: ${v} × ${f} = ${n2s(v * f)} ${small}.`, { units: units(small), display: `${n2s(v * f)} ${small}` });
+    }
+    const v = Math.random() < 0.5 ? randInt(2, 90) * f : randInt(11, 99) * f / 10;
+    return makeNum('measurement', `Convert ${n2s(v)} ${small} to ${big}.`, r6(v / f),
+      `1 ${big} = ${f} ${small}. Going to a larger unit gives a smaller number: ${n2s(v)} ÷ ${f} = ${n2s(v / f)} ${big}.`, { units: units(big), display: `${n2s(v / f)} ${big}` });
+  }
+  function angles6() {
+    const t = randInt(1, 6);
+    if (t === 1) {
+      const a = randInt(20, 160);
+      return makeNum('measurement', `Two angles are supplementary. One angle measures ${a}°. What is the measure of the other angle?`, 180 - a,
+        `Supplementary angles add to 180°: 180 − ${a} = ${180 - a}°.`, { units: units('deg'), display: `${180 - a}°` });
+    }
+    if (t === 2) {
+      const a = randInt(10, 80);
+      return makeNum('measurement', `Two angles are complementary. One angle measures ${a}°. What is the measure of the other angle?`, 90 - a,
+        `Complementary angles add to 90°: 90 − ${a} = ${90 - a}°.`, { units: units('deg'), display: `${90 - a}°` });
+    }
+    if (t === 3) {
+      const a = randInt(25, 155);
+      if (Math.random() < 0.5) {
+        return makeNum('measurement', `Two straight lines intersect. One of the angles formed measures ${a}°. What is the measure of the angle directly opposite it?`, a,
+          'Opposite (vertical) angles are equal.', { units: units('deg'), display: `${a}°` });
+      }
+      return makeNum('measurement', `Two straight lines intersect. One of the angles formed measures ${a}°. What is the measure of an angle next to it (adjacent) on the same line?`, 180 - a,
+        `Adjacent angles on a straight line add to 180°: 180 − ${a} = ${180 - a}°.`, { units: units('deg'), display: `${180 - a}°` });
+    }
+    if (t === 4) {
+      let a = randInt(25, 100), b = randInt(25, 100);
+      while (a + b > 160) { a = randInt(25, 100); b = randInt(25, 100); }
+      return makeNum('measurement', `Two angles of a triangle measure ${a}° and ${b}°. What is the measure of the third angle?`, 180 - a - b,
+        `The angles in a triangle add to 180°: 180 − ${a} − ${b} = ${180 - a - b}°.`, { units: units('deg'), display: `${180 - a - b}°` });
+    }
+    if (t === 5) {
+      const a = randInt(50, 120), b = randInt(50, 120), c = randInt(50, 120);
+      if (360 - a - b - c < 20 || 360 - a - b - c > 170) return angles6();
+      return makeNum('measurement', `Three angles of a quadrilateral measure ${a}°, ${b}° and ${c}°. What is the measure of the fourth angle?`, 360 - a - b - c,
+        `The angles in a quadrilateral add to 360°: 360 − ${a} − ${b} − ${c} = ${360 - a - b - c}°.`, { units: units('deg'), display: `${360 - a - b - c}°` });
+    }
+    const a = randInt(30, 150);
+    return makeNum('measurement', `A triangle has an interior angle of ${a}°. What is the measure of the exterior angle at that vertex?`, 180 - a,
+      `An interior angle and its exterior angle form a straight line, so they add to 180°: 180 − ${a} = ${180 - a}°.`, { units: units('deg'), display: `${180 - a}°` });
+  }
+  function area6() {
+    const t = randInt(1, 5);
+    if (t === 1) {
+      let a = randInt(3, 16), b = randInt(3, 16), h = randInt(2, 14);
+      while ((a + b) * h % 2 !== 0) h = randInt(2, 14);
+      return makeNum('measurement', `A trapezoid has parallel sides of ${a} cm and ${b} cm and a height of ${h} cm. What is its area?`, (a + b) * h / 2,
+        `Area = (a + b) ÷ 2 × h = (${a} + ${b}) ÷ 2 × ${h} = ${(a + b) / 2} × ${h} = ${(a + b) * h / 2} cm².`, { units: units('cm2'), display: `${(a + b) * h / 2} cm²` });
+    }
+    if (t === 2) {
+      let d1 = randInt(4, 20), d2 = randInt(4, 20);
+      while ((d1 * d2) % 2 !== 0) d2 = randInt(4, 20);
+      const shape = pick(['rhombus', 'kite']);
+      return makeNum('measurement', `A ${shape} has diagonals of ${d1} cm and ${d2} cm. What is its area?`, d1 * d2 / 2,
+        `The diagonals split the ${shape} into triangles: Area = d₁ × d₂ ÷ 2 = ${d1} × ${d2} ÷ 2 = ${d1 * d2 / 2} cm².`, { units: units('cm2'), display: `${d1 * d2 / 2} cm²` });
+    }
+    if (t === 3) {
+      const W = randInt(10, 24), H = randInt(10, 24), w = randInt(2, W - 4), h = randInt(2, H - 4);
+      return makeNum('measurement', 'What is the area of this L-shaped figure? (All angles are right angles.)', W * H - w * h,
+        `Decompose: the big rectangle is ${W} × ${H} = ${W * H} cm². Subtract the missing corner ${w} × ${h} = ${w * h} cm²: ${W * H} − ${w * h} = ${W * H - w * h} cm².`,
+        { units: units('cm2'), display: `${W * H - w * h} cm²`, visual: svgNotch(W, H, w, h) });
+    }
+    if (t === 4) {
+      const l = randInt(4, 16), w = randInt(3, 12);
+      let h = randInt(2, 12);
+      while ((l * h) % 2 !== 0) h = randInt(2, 12);
+      return makeNum('measurement', `A house-shaped figure is made of a rectangle ${l} cm wide and ${w} cm high with a triangle on top. The triangle has a base of ${l} cm and a height of ${h} cm. What is the total area?`, l * w + l * h / 2,
+        `Rectangle: ${l} × ${w} = ${l * w} cm². Triangle: ${l} × ${h} ÷ 2 = ${l * h / 2} cm². Total: ${l * w + l * h / 2} cm².`, { units: units('cm2'), display: `${l * w + l * h / 2} cm²` });
+    }
+    const b = randInt(4, 18), h = randInt(3, 14);
+    return makeNum('measurement', `A rhombus has a base of ${b} cm and a height of ${h} cm. What is its area?`, b * h,
+      `A rhombus is a parallelogram, so Area = b × h = ${b} × ${h} = ${b * h} cm².`, { units: units('cm2'), display: `${b * h} cm²` });
+  }
+  function svgNotch(W, H, w, h) {
+    const sc = 170 / Math.max(W, H);
+    const pw = W * sc, ph = H * sc, nw = w * sc, nh = h * sc, ox = 40, oy = 20;
+    const pts = [[0, 0], [pw - nw, 0], [pw - nw, nh], [pw, nh], [pw, ph], [0, ph]].map(p => `${ox + p[0]},${oy + p[1]}`).join(' ');
+    let s = `<svg viewBox="0 0 ${pw + 100} ${ph + 56}" width="${Math.min(pw + 100, 320)}" role="img" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">`;
+    s += `<polygon points="${pts}" fill="#e9f0ff" stroke="#4f6df5" stroke-width="2" />`;
+    s += `<text x="${ox + pw / 2}" y="${oy + ph + 18}" text-anchor="middle" font-size="12" fill="#1a2332">${W} cm</text>`;
+    s += `<text x="${ox - 8}" y="${oy + ph / 2}" text-anchor="end" font-size="12" fill="#1a2332">${H} cm</text>`;
+    s += `<text x="${ox + pw - nw / 2}" y="${oy - 6}" text-anchor="middle" font-size="12" fill="#e5484d">${w} cm</text>`;
+    s += `<text x="${ox + pw + 6}" y="${oy + nh / 2 + 4}" font-size="12" fill="#e5484d">${h} cm</text>`;
+    return s + '</svg>';
+  }
+  function surfaceArea6() {
+    const t = randInt(1, 3);
+    if (t === 1) {
       const l = randInt(2, 15), w = randInt(2, 15), h = randInt(2, 15);
-      const lw = l * w, lh = l * h, wh = w * h;
-      const sa = 2 * (lw + lh + wh);
-      return mkGeom('prism-surface-area', `A rectangular prism is ${l} cm × ${w} cm × ${h} cm. What is its surface area?`,
-        'Enter a number (cm²).', sa, 0.01, `${sa} cm²`,
-        `Add the areas of the three pairs of faces, then double: 2 × (${l}×${w} + ${l}×${h} + ${w}×${h}) = 2 × (${lw} + ${lh} + ${wh}) = ${sa} cm².`);
+      return makeNum('measurement', `A rectangular prism is ${l} cm by ${w} cm by ${h} cm. What is its surface area?`, 2 * (l * w + l * h + w * h),
+        `Add the areas of the three pairs of matching faces: 2 × (${l}×${w} + ${l}×${h} + ${w}×${h}) = 2 × (${l * w} + ${l * h} + ${w * h}) = ${2 * (l * w + l * h + w * h)} cm².`,
+        { units: units('cm2'), display: `${2 * (l * w + l * h + w * h)} cm²` });
     }
-    if (shape === 'circle-area') {
-      const r = randInt(2, 15);
-      const area = round2(PI * r * r);
-      return mkGeom('circle-area', `A circle has a radius of ${r} cm. What is its area? (use π ≈ 3.14)`,
-        'Enter a number (cm²), rounded to 2 decimals.', area, 0.02, `≈ ${area} cm²`,
-        `Area = π × r² = 3.14 × ${r}² = 3.14 × ${r * r} ≈ ${area} cm².`);
+    if (t === 2) {
+      const k = randInt(1, 3), a = 3 * k, b = 4 * k, c = 5 * k, L = randInt(4, 15);
+      const sa = a * b + (a + b + c) * L;
+      return makeNum('measurement', `A triangular prism has right-triangle bases with sides ${a} cm, ${b} cm and ${c} cm (the right angle is between the ${a} cm and ${b} cm sides). The prism is ${L} cm long. What is its surface area?`, sa,
+        `Two triangular bases: 2 × (${a} × ${b} ÷ 2) = ${a * b} cm². Three rectangles: (${a} + ${b} + ${c}) × ${L} = ${(a + b + c) * L} cm². Total: ${a * b} + ${(a + b + c) * L} = ${sa} cm².`,
+        { units: units('cm2'), display: `${sa} cm²` });
     }
-    if (shape === 'circle-circumference') {
-      const r = randInt(2, 15);
-      const circ = round2(2 * PI * r);
-      return mkGeom('circle-circumference', `A circle has a radius of ${r} cm. What is its circumference? (use π ≈ 3.14)`,
-        'Enter a number (cm), rounded to 2 decimals.', circ, 0.02, `≈ ${circ} cm`,
-        `Circumference = 2 × π × r = 2 × 3.14 × ${r} ≈ ${circ} cm.`);
-    }
-    if (shape === 'cylinder-volume') {
-      const r = randInt(2, 10), h = randInt(2, 15);
-      const vol = round2(PI * r * r * h);
-      return mkGeom('cylinder-volume', `A cylinder has a radius of ${r} cm and a height of ${h} cm. What is its volume? (use π ≈ 3.14)`,
-        'Enter a number (cm³), rounded to 2 decimals.', vol, 0.02, `≈ ${vol} cm³`,
-        `Volume = π × r² × height = 3.14 × ${r}² × ${h} = 3.14 × ${r * r} × ${h} ≈ ${vol} cm³.`);
-    }
-    // prism-volume
-    const l = randInt(2, 12), w = randInt(2, 12), h = randInt(2, 12);
-    const vol = l * w * h;
-    return mkGeom('prism-volume', `A rectangular prism is ${l} cm × ${w} cm × ${h} cm. What is its volume?`,
-      'Enter a number (cm³).', vol, 0.01, `${vol} cm³`,
-      `Volume = length × width × height = ${l} × ${w} × ${h} = ${vol} cm³.`);
+    const s = randInt(3, 14), l = randInt(4, 15);
+    const sa = s * s + 2 * s * l;
+    return makeNum('measurement', `A square pyramid has a base with side length ${s} cm. Each triangular face has a height (slant height) of ${l} cm. What is its surface area?`, sa,
+      `Base: ${s} × ${s} = ${s * s} cm². Four triangles: 4 × (${s} × ${l} ÷ 2) = ${2 * s * l} cm². Total: ${s * s} + ${2 * s * l} = ${sa} cm².`,
+      { units: units('cm2'), display: `${sa} cm²` });
   }
-  function mkGeom(subId, question, hint, value, tolerance, correctDisplay, solution) {
-    return {
-      topicId: 'geometry',
-      question,
-      hint,
-      answerType: 'number',
-      correct: { value, tolerance },
-      correctDisplay,
-      solution
-    };
+  function circleFormulas7() {
+    const t = randInt(1, 5);
+    const r = randInt(2, 15);
+    if (t === 1) {
+      const useD = Math.random() < 0.5;
+      const C = r6(PI * 2 * r);
+      return makeNum('measurement', `A circle has a ${useD ? `diameter of ${2 * r}` : `radius of ${r}`} cm. What is its circumference? (Use π ≈ 3.14.)`, C,
+        `C = π × d = 3.14 × ${2 * r} = ${n2s(C)} cm.`, { tol: 0.01, units: units('cm'), display: `${n2s(C)} cm`, hint: 'Enter a number (cm). Round to 2 decimals if needed.' });
+    }
+    if (t === 2) {
+      const useD = Math.random() < 0.5;
+      const A = r6(PI * r * r);
+      return makeNum('measurement', `A circle has a ${useD ? `diameter of ${2 * r}` : `radius of ${r}`} cm. What is its area? (Use π ≈ 3.14.)`, A,
+        `${useD ? `The radius is half the diameter: ${2 * r} ÷ 2 = ${r} cm. ` : ''}A = π × r² = 3.14 × ${r}² = 3.14 × ${r * r} = ${n2s(A)} cm².`, { tol: 0.01, units: units('cm2'), display: `${n2s(A)} cm²`, hint: 'Enter a number (cm²). Round to 2 decimals if needed.' });
+    }
+    if (t === 3) {
+      const C = r6(PI * 2 * r);
+      return makeNum('measurement', `A circle has a circumference of ${n2s(C)} cm. What is its radius? (Use π ≈ 3.14.)`, r,
+        `C = 2 × π × r, so r = ${n2s(C)} ÷ (2 × 3.14) = ${n2s(C)} ÷ ${n2s(2 * PI)} = ${r} cm.`, { tol: 0.01, units: units('cm'), display: `${r} cm` });
+    }
+    if (t === 4) {
+      const A = r6(PI * r * r);
+      return makeNum('measurement', `A circle has an area of ${n2s(A)} cm². What is its radius? (Use π ≈ 3.14.)`, r,
+        `A = π × r², so r² = ${n2s(A)} ÷ 3.14 = ${r * r}. The radius is √${r * r} = ${r} cm.`, { tol: 0.01, units: units('cm'), display: `${r} cm` });
+    }
+    const d = 2 * randInt(2, 12);
+    return makeNum('measurement', `A circular garden has a diameter of ${d} m. A path goes all the way around its edge. How long is the path? (Use π ≈ 3.14.)`, r6(PI * d),
+      `The path is the circumference: C = π × d = 3.14 × ${d} = ${n2s(PI * d)} m.`, { tol: 0.01, units: units('m'), display: `${n2s(PI * d)} m`, hint: 'Enter a number (m). Round to 2 decimals if needed.' });
   }
+  function cylinder7() {
+    const r = randInt(2, 10), h = randInt(2, 15);
+    if (Math.random() < 0.5) {
+      const V = r6(PI * r * r * h);
+      return makeNum('measurement', `A cylinder has a radius of ${r} cm and a height of ${h} cm. What is its volume? (Use π ≈ 3.14.)`, V,
+        `Volume = (area of base) × height = π × r² × h = 3.14 × ${r}² × ${h} = ${n2s(PI * r * r)} × ${h} = ${n2s(V)} cm³.`, { tol: 0.01, units: units('cm3'), display: `${n2s(V)} cm³`, hint: 'Enter a number (cm³). Round to 2 decimals if needed.' });
+    }
+    const SA = r6(2 * PI * r * r + 2 * PI * r * h);
+    return makeNum('measurement', `A closed cylinder has a radius of ${r} cm and a height of ${h} cm. What is its surface area? (Use π ≈ 3.14.)`, SA,
+      `Two circles: 2 × 3.14 × ${r}² = ${n2s(2 * PI * r * r)} cm². The curved side is a rectangle: 2 × 3.14 × ${r} × ${h} = ${n2s(2 * PI * r * h)} cm². Total: ${n2s(SA)} cm².`, { tol: 0.01, units: units('cm2'), display: `${n2s(SA)} cm²`, hint: 'Enter a number (cm²). Round to 2 decimals if needed.' });
+  }
+  function prismVolume7() {
+    const t = randInt(1, 3);
+    if (t === 1) {
+      const l = randInt(2, 14), w = randInt(2, 14), h = randInt(2, 14);
+      return makeNum('measurement', `A rectangular prism is ${l} cm by ${w} cm by ${h} cm. What is its volume?`, l * w * h,
+        `Volume = (area of base) × height = ${l} × ${w} × ${h} = ${l * w * h} cm³.`, { units: units('cm3'), display: `${l * w * h} cm³` });
+    }
+    if (t === 2) {
+      const b = randInt(3, 14);
+      let h = randInt(3, 14);
+      while ((b * h) % 2 !== 0) h = randInt(3, 14);
+      const L = randInt(4, 15);
+      return makeNum('measurement', `A triangular prism has triangular bases with a base of ${b} cm and a height of ${h} cm. The prism is ${L} cm long. What is its volume?`, b * h / 2 * L,
+        `Area of base = ${b} × ${h} ÷ 2 = ${b * h / 2} cm². Volume = area of base × length = ${b * h / 2} × ${L} = ${b * h / 2 * L} cm³.`, { units: units('cm3'), display: `${b * h / 2 * L} cm³` });
+    }
+    const B = randInt(6, 60), h = randInt(3, 15);
+    if (Math.random() < 0.5) {
+      return makeNum('measurement', `A prism has a base area of ${B} cm² and a volume of ${B * h} cm³. What is its height?`, h,
+        `Volume = base area × height, so height = ${B * h} ÷ ${B} = ${h} cm.`, { units: units('cm'), display: `${h} cm` });
+    }
+    return makeNum('measurement', `A prism has a height of ${h} cm and a volume of ${B * h} cm³. What is the area of its base?`, B,
+      `Volume = base area × height, so base area = ${B * h} ÷ ${h} = ${B} cm².`, { units: units('cm2'), display: `${B} cm²` });
+  }
+  function cylinderUnknown7() {
+    const r = randInt(2, 9), h = randInt(2, 14);
+    const V = r6(PI * r * r * h);
+    return makeNum('measurement', `A cylinder has a radius of ${r} cm and a volume of ${n2s(V)} cm³. What is its height? (Use π ≈ 3.14.)`, h,
+      `Base area = 3.14 × ${r}² = ${n2s(PI * r * r)} cm². Height = volume ÷ base area = ${n2s(V)} ÷ ${n2s(PI * r * r)} = ${h} cm.`, { tol: 0.01, units: units('cm'), display: `${h} cm` });
+  }
+  function volumeCapacity7() {
+    const t = randInt(1, 3);
+    if (t === 1) {
+      for (let i = 0; i < 100; i++) {
+        const l = pick([20, 25, 30, 40, 50, 60]), w = pick([20, 25, 30, 40]), h = pick([20, 25, 30, 40]);
+        const L = l * w * h / 1000;
+        if (L !== Math.round(L * 100) / 100) continue;
+        return makeNum('measurement', `A fish tank measures ${l} cm by ${w} cm by ${h} cm. How many litres of water can it hold when it is full? (1 L = 1000 cm³)`, L,
+          `Volume = ${l} × ${w} × ${h} = ${l * w * h} cm³. Since 1 mL = 1 cm³ and 1 L = 1000 mL, ${l * w * h} cm³ = ${n2s(L)} L.`, { units: units('L'), display: `${n2s(L)} L` });
+      }
+    }
+    if (t === 2) {
+      const a = randInt(5, 20) / 10, up = randInt(2, 9) * 50 / 1000;
+      const b = r6(a + up);
+      return makeNum('measurement', `A beaker holds ${a.toFixed(2)} L of water. When a stone is placed in the beaker, the water level rises to ${b.toFixed(2)} L. What is the volume of the stone, in cm³?`, r6((b - a) * 1000),
+        `The water rises by ${b.toFixed(2)} − ${a.toFixed(2)} = ${n2s(b - a)} L = ${n2s((b - a) * 1000)} mL. Since 1 mL = 1 cm³, the stone's volume is ${n2s((b - a) * 1000)} cm³.`, { units: units('cm3'), display: `${n2s((b - a) * 1000)} cm³` });
+    }
+    const v = randInt(2, 40) * 25;
+    return makeNum('measurement', `A container has a capacity of ${v} mL. What is its capacity in cm³?`, v,
+      `1 mL occupies 1 cm³, so ${v} mL = ${v} cm³.`, { units: units('cm3'), display: `${v} cm³` });
+  }
+  function unitConv7() {
+    const t = randInt(1, 5);
+    if (t === 1) {
+      const v = pick([0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 7.5]);
+      return makeNum('measurement', `Convert ${v} m² to cm².`, v * 10000,
+        `1 m = 100 cm, so 1 m² = 100 × 100 = 10 000 cm². ${v} × 10 000 = ${fmtBig(v * 10000)} cm².`, { units: units('cm2'), display: `${fmtBig(v * 10000)} cm²` });
+    }
+    if (t === 2) {
+      const v = pick([5000, 10000, 15000, 20000, 25000, 30000, 45000, 60000, 75000]);
+      return makeNum('measurement', `Convert ${fmtBig(v)} cm² to m².`, v / 10000,
+        `1 m² = 10 000 cm². ${fmtBig(v)} ÷ 10 000 = ${n2s(v / 10000)} m².`, { units: units('m2'), display: `${n2s(v / 10000)} m²` });
+    }
+    if (t === 3) {
+      const v = pick([0.5, 1, 1.5, 2, 3, 4, 5]);
+      return makeNum('measurement', `Convert ${v} m³ to cm³.`, v * 1000000,
+        `1 m = 100 cm, so 1 m³ = 100 × 100 × 100 = 1 000 000 cm³. ${v} × 1 000 000 = ${fmtBig(v * 1000000)} cm³.`, { units: units('cm3'), display: `${fmtBig(v * 1000000)} cm³` });
+    }
+    if (t === 4) {
+      const v = pick([500000, 1000000, 2000000, 2500000, 3000000, 4500000, 6000000]);
+      return makeNum('measurement', `Convert ${fmtBig(v)} cm³ to m³.`, v / 1000000,
+        `1 m³ = 1 000 000 cm³. ${fmtBig(v)} ÷ 1 000 000 = ${n2s(v / 1000000)} m³.`, { units: units('m3'), display: `${n2s(v / 1000000)} m³` });
+    }
+    const wm = pick([1.5, 2, 2.5, 3, 4]), hc = pick([20, 25, 40, 50, 60]);
+    return makeNum('measurement', `A rectangle is ${wm} m long and ${hc} cm wide. What is its area in cm²?`, wm * 100 * hc,
+      `Convert to the same unit first: ${wm} m = ${wm * 100} cm. Area = ${wm * 100} × ${hc} = ${fmtBig(wm * 100 * hc)} cm².`, { units: units('cm2'), display: `${fmtBig(wm * 100 * hc)} cm²` });
+  }
+  GENERATORS.measurement = {
+    6: [metricConvert6, metricConvert6, angles6, angles6, area6, area6, area6, surfaceArea6, surfaceArea6],
+    7: [circleFormulas7, circleFormulas7, circleFormulas7, cylinder7, cylinder7, prismVolume7, prismVolume7, cylinderUnknown7, volumeCapacity7, volumeCapacity7, unitConv7, unitConv7]
+  };
 
-  const GENERATORS = {
-    integers: genIntegers,
-    fractions: genFractions,
-    decimals: genDecimals,
-    ratios: genRatios,
-    percentages: genPercentages,
-    orderops: genOrderOps,
-    equations: genEquations,
-    geometry: genGeometry
+  // =====================================================================
+  // FINANCIAL LITERACY (F1)
+  //   Gr 6: financial goals (F1.2), interest rates and fees (F1.4),
+  //         whole-number percents
+  //   Gr 7: exchange rates and converting currency (F1.1), budgets (F1.3),
+  //         interest rates on savings and borrowing (F1.5, F1.6)
+  //   (Most financial literacy expectations are conceptual; these practise
+  //    the calculations behind them.)
+  // =====================================================================
+  function savingsGoal6() {
+    const nm = pick(NAMES), item = pick(['a bike', 'a tablet', 'a camping trip', 'a new skateboard', 'a guitar']);
+    const per = randInt(2, 12) * 5, weeks = randInt(4, 20), start = randInt(1, 6) * 10;
+    const goal = start + per * weeks;
+    return makeNum('financial', `${nm} wants to save $${goal} to buy ${item}. ${nm} already has $${start} and saves $${per} each week. How many weeks will it take to reach the goal?`, weeks,
+      `Amount still needed: ${goal} − ${start} = ${goal - start}. Weeks = ${goal - start} ÷ ${per} = ${weeks}.`, { units: units('weeks'), display: `${weeks} weeks`, hint: 'Enter a number of weeks.' });
+  }
+  function interest6() {
+    if (Math.random() < 0.5) {
+      const r = randInt(1, 5), P = randInt(1, 10) * 100;
+      return makeNum('financial', `A savings account pays ${r}% interest per year. How much interest is earned in one year on $${P}?`, P * r / 100,
+        `${r}% of ${P} = ${r}/100 × ${P} = $${P * r / 100}.`, { units: units('dollar'), display: '$' + n2s(P * r / 100), hint: 'Enter an amount in dollars.' });
+    }
+    const r = pick([5, 10, 15]), L = randInt(1, 10) * 20;
+    return makeNum('financial', `A lender charges a ${r}% fee on the amount borrowed. How much is the fee on a $${L} loan?`, L * r / 100,
+      `${r}% of ${L} = ${r}/100 × ${L} = $${n2s(L * r / 100)}.`, { units: units('dollar'), display: '$' + n2s(L * r / 100), hint: 'Enter an amount in dollars.' });
+  }
+  function budget6() {
+    const nm = pick(NAMES), income = randInt(4, 12) * 10, a = randInt(5, 20), b = randInt(5, 15), w = randInt(2, 8);
+    if (income - a - b <= 0) return budget6();
+    return makeNum('financial', `${nm} earns $${income} each week. Each week ${nm} spends $${a} on food and $${b} on transit and saves the rest. How much does ${nm} save in ${w} weeks?`, (income - a - b) * w,
+      `Savings per week: ${income} − ${a} − ${b} = ${income - a - b}. In ${w} weeks: ${income - a - b} × ${w} = $${(income - a - b) * w}.`, { units: units('dollar'), display: `$${(income - a - b) * w}`, hint: 'Enter an amount in dollars.' });
+  }
+  function currency7() {
+    const amt = randInt(5, 50) * 10;
+    const t = randInt(1, 4);
+    if (t === 1) {
+      const rate = pick([0.72, 0.73, 0.74, 0.75, 0.76]);
+      return makeNum('financial', `Suppose the exchange rate is 1 CAD = ${rate.toFixed(2)} USD. How many US dollars is $${amt} CAD worth?`, r6(amt * rate),
+        `Multiply by the exchange rate: ${amt} × ${rate.toFixed(2)} = ${n2s(amt * rate)} USD.`, { units: units('usd'), display: `${n2s(amt * rate)} USD`, hint: 'Enter an amount in US dollars.' });
+    }
+    if (t === 2) {
+      const rate = pick([1.30, 1.35, 1.40, 1.45]);
+      return makeNum('financial', `Suppose the exchange rate is 1 USD = ${rate.toFixed(2)} CAD. How many Canadian dollars is $${amt} USD worth?`, r6(amt * rate),
+        `Multiply by the exchange rate: ${amt} × ${rate.toFixed(2)} = ${n2s(amt * rate)} CAD.`, { units: units('dollar'), display: `${n2s(amt * rate)} CAD`, hint: 'Enter an amount in Canadian dollars.' });
+    }
+    if (t === 3) {
+      const rate = pick([0.65, 0.66, 0.68, 0.70]);
+      return makeNum('financial', `Suppose the exchange rate is 1 CAD = ${rate.toFixed(2)} euros. How many euros do you get for $${amt} CAD?`, r6(amt * rate),
+        `${amt} × ${rate.toFixed(2)} = ${n2s(amt * rate)} euros.`, { units: units('eur'), display: `${n2s(amt * rate)} euros`, hint: 'Enter an amount in euros.' });
+    }
+    const rate = pick([1.40, 1.45, 1.50, 1.55]);
+    const cost = randInt(5, 40) * 5;
+    return makeNum('financial', `A souvenir costs ${cost} euros. The exchange rate is 1 euro = ${rate.toFixed(2)} CAD. What is the cost in Canadian dollars?`, r6(cost * rate),
+      `${cost} × ${rate.toFixed(2)} = ${n2s(cost * rate)} CAD.`, { units: units('dollar'), display: '$' + n2s(cost * rate), hint: 'Enter an amount in Canadian dollars.' });
+  }
+  function interestCompare7() {
+    for (let i = 0; i < 100; i++) {
+      const r1 = randInt(2, 8) / 2, r2 = randInt(2, 8) / 2, P1 = randInt(2, 10) * 100, P2 = randInt(2, 10) * 100;
+      const i1 = r6(P1 * r1 / 100), i2 = r6(P2 * r2 / 100);
+      if (i1 === i2) continue;
+      const best = Math.max(i1, i2);
+      return makeNum('financial', `Account A pays ${n2s(r1)}% interest per year on $${P1}. Account B pays ${n2s(r2)}% interest per year on $${P2}. How much interest does the better account earn in one year?`, best,
+        `Account A: ${n2s(r1)}% of ${P1} = $${n2s(i1)}. Account B: ${n2s(r2)}% of ${P2} = $${n2s(i2)}. The better account earns $${n2s(best)}.`, { units: units('dollar'), display: '$' + n2s(best), hint: 'Enter an amount in dollars.' });
+    }
+    return interestCompare7();
+  }
+  function budget7() {
+    const nm = pick(NAMES), income = randInt(10, 40) * 100;
+    for (let i = 0; i < 100; i++) {
+      const p1 = randInt(4, 8) * 5, p2 = randInt(2, 5) * 5, p3 = randInt(2, 5) * 5;
+      if (p1 + p2 + p3 >= 95) continue;
+      const t = randInt(1, 3);
+      if (t === 1) return makeNum('financial', `${nm}'s monthly income is $${income}. A budget sets aside ${p1}% for rent. How much is set aside for rent?`, income * p1 / 100,
+        `${p1}% of ${income} = ${p1}/100 × ${income} = $${n2s(income * p1 / 100)}.`, { units: units('dollar'), display: '$' + n2s(income * p1 / 100), hint: 'Enter an amount in dollars.' });
+      if (t === 2) {
+        const left = 100 - p1 - p2 - p3;
+        return makeNum('financial', `${nm}'s monthly income is $${income}. The budget sets aside ${p1}% for rent, ${p2}% for food and ${p3}% for savings. How much money is left for other expenses?`, income * left / 100,
+          `Percent left over: 100 − ${p1} − ${p2} − ${p3} = ${left}%. ${left}% of ${income} = $${n2s(income * left / 100)}.`, { units: units('dollar'), display: '$' + n2s(income * left / 100), hint: 'Enter an amount in dollars.' });
+      }
+      const monthly = income * p3 / 100, months = randInt(3, 12);
+      return makeNum('financial', `${nm}'s monthly income is $${income} and ${p3}% of it goes to savings. How many months will it take to save $${monthly * months}?`, months,
+        `Savings per month: ${p3}% of ${income} = $${n2s(monthly)}. Months = ${monthly * months} ÷ ${n2s(monthly)} = ${months}.`, { units: units('months'), display: `${months} months`, hint: 'Enter a number of months.' });
+    }
+    return budget7();
+  }
+  GENERATORS.financial = {
+    6: [savingsGoal6, savingsGoal6, interest6, interest6, budget6],
+    7: [currency7, currency7, currency7, interestCompare7, budget7, budget7]
   };
 
   function generateProblem(topicId, grade) {
-    const actualTopic = topicId === 'mixed' ? pick(PRACTICE_TOPIC_IDS) : topicId;
-    return GENERATORS[actualTopic](grade);
-  }
-
-  // ---------- answer checking ----------
-  function parseFracLike(raw) {
-    const s = raw.trim();
-    const m = s.match(/^(-?\d+)\s*[\/:]\s*(-?\d+)$/);
-    if (m) {
-      let n = parseInt(m[1], 10), d = parseInt(m[2], 10);
-      if (d === 0) return null;
-      if (d < 0) { n = -n; d = -d; }
-      return { n, d };
-    }
-    const mi = s.match(/^-?\d+$/);
-    if (mi) return { n: parseInt(s, 10), d: 1 };
-    return null;
-  }
-
-  function checkAnswer(problem, raw) {
-    if (raw === null || raw === undefined || raw.trim() === '') return false;
-    if (problem.answerType === 'number') {
-      const val = Number(raw.trim().replace(/[$,]/g, ''));
-      if (Number.isNaN(val)) return false;
-      return Math.abs(val - problem.correct.value) <= problem.correct.tolerance + 1e-9;
-    }
-    if (problem.answerType === 'sequence') {
-      const parts = raw.split(',').map(s => s.trim()).filter(s => s !== '');
-      if (parts.length !== problem.correct.sequence.length) return false;
-      const nums = parts.map(Number);
-      if (nums.some(Number.isNaN)) return false;
-      return nums.every((v, i) => v === problem.correct.sequence[i]);
-    }
-    // fraction or ratio
-    const parsed = parseFracLike(raw);
-    if (!parsed) return false;
-    return parsed.n * problem.correct.d === problem.correct.n * parsed.d;
+    const actual = topicId === 'mixed' ? pick(PRACTICE_TOPIC_IDS) : topicId;
+    const p = pick(GENERATORS[actual][grade])();
+    p.topicId = actual;
+    return p;
   }
 
   // ---------- state ----------
@@ -1058,7 +3067,7 @@
   let selectedGrade = loadGrade();
   let currentProblem = null;
   let answered = false;
-  let session = null; // { topicId, index, correct }
+  let session = null; // { topicId, index, correct, history }
 
   function loadStats() {
     try {
@@ -1105,6 +3114,7 @@
   const topicTag = document.getElementById('topicTag');
   const progressTag = document.getElementById('progressTag');
   const questionText = document.getElementById('questionText');
+  const questionVisual = document.getElementById('questionVisual');
   const answerHint = document.getElementById('answerHint');
   const answerInput = document.getElementById('answerInput');
   const actionBtn = document.getElementById('actionBtn');
@@ -1137,9 +3147,19 @@
   }
   if (selectedGrade) enterMainArea();
 
-  topicButtons.innerHTML = TOPICS.map(t =>
-    `<button type="button" class="topic-btn" data-topic="${t.id}">${escapeHtml(t.label)}</button>`
-  ).join('');
+  function topicButtonHtml(t) {
+    return `<button type="button" class="topic-btn" data-topic="${t.id}">${escapeHtml(t.label)}</button>`;
+  }
+  (function buildTopicButtons() {
+    const strands = [];
+    TOPICS.filter(t => t.strand).forEach(t => { if (!strands.includes(t.strand)) strands.push(t.strand); });
+    let html = `<div class="topic-group"><div class="topic-group-buttons">${topicButtonHtml(TOPICS[0])}</div></div>`;
+    strands.forEach(s => {
+      html += `<div class="topic-group"><div class="topic-group-label">${escapeHtml(s)}</div><div class="topic-group-buttons">` +
+        TOPICS.filter(t => t.strand === s).map(topicButtonHtml).join('') + '</div></div>';
+    });
+    topicButtons.innerHTML = html;
+  })();
   topicButtons.querySelectorAll('.topic-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       topicButtons.querySelectorAll('.topic-btn').forEach(b => b.classList.toggle('active', b === btn));
@@ -1217,6 +3237,13 @@
     topicTag.textContent = TOPIC_LABEL[currentProblem.topicId];
     progressTag.textContent = `Question ${session.index} of ${MAX_QUESTIONS_PER_TOPIC}`;
     questionText.textContent = currentProblem.question;
+    if (currentProblem.visual) {
+      questionVisual.innerHTML = currentProblem.visual;
+      questionVisual.style.display = 'block';
+    } else {
+      questionVisual.innerHTML = '';
+      questionVisual.style.display = 'none';
+    }
     answerHint.textContent = currentProblem.hint;
     answerInput.value = '';
     answerInput.disabled = false;
@@ -1246,6 +3273,7 @@
           <span class="review-badge ${h.isCorrect ? 'correct' : 'wrong'}">${h.isCorrect ? 'Correct' : 'Wrong'}</span>
         </div>
         <div class="review-question">${escapeHtml(h.question)}</div>
+        ${h.visual ? `<div class="visual">${h.visual}</div>` : ''}
         <div class="review-answer-line ${h.isCorrect ? 'correct-value' : 'wrong-value'}">Your answer: <b>${escapeHtml(h.userAnswer)}</b></div>
         ${h.isCorrect ? '' : `<div class="review-answer-line correct-value">Correct answer: <b>${escapeHtml(h.correctDisplay)}</b></div>`}
         <div class="review-steps"><span class="steps-label">Steps:</span>${escapeHtml(h.solution)}</div>
@@ -1271,6 +3299,7 @@
 
     session.history.push({
       question: currentProblem.question,
+      visual: currentProblem.visual || '',
       topicLabel: TOPIC_LABEL[currentProblem.topicId],
       userAnswer: raw,
       isCorrect,
@@ -1293,6 +3322,7 @@
 
     actionBtn.focus();
   }
+
 
   renderStats();
 })();
