@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Grade 6&ndash;8 Math Practice</title>
+<title>Grade 1&ndash;8 Math Practice</title>
 <style>
   :root {
     --bg: #f4f7fb;
@@ -55,8 +55,8 @@
     gap: 12px;
   }
   .grade-btn {
-    flex: 1;
-    min-width: 220px;
+    flex: 1 1 200px;
+    min-width: 0;
     text-align: left;
     padding: 16px 18px;
     border-radius: 12px;
@@ -346,13 +346,33 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>Grade 6&ndash;8 Math Practice</h1>
+    <h1>Grade 1&ndash;8 Math Practice</h1>
     <p>Based on the Ontario Mathematics Curriculum (2020). Pick a topic and work through problems, one at a time.</p>
   </header>
 
   <div class="card" id="gradeGate">
     <h2 class="section-title">Which grade are you practicing?</h2>
     <div class="grade-options">
+      <button type="button" class="grade-btn" data-grade="1">
+        <span class="grade-num">Grade 1</span>
+        <span class="grade-desc">Counting to 50, adding &amp; subtracting to 20, fair sharing, patterns, shapes, coins</span>
+      </button>
+      <button type="button" class="grade-btn" data-grade="2">
+        <span class="grade-num">Grade 2</span>
+        <span class="grade-desc">Numbers to 200, adding &amp; subtracting to 100, equal groups, even &amp; odd, bar graphs, cm &amp; m</span>
+      </button>
+      <button type="button" class="grade-btn" data-grade="3">
+        <span class="grade-num">Grade 3</span>
+        <span class="grade-desc">Numbers to 1000, rounding, times tables (2, 5, 10), fractions, perimeter, clocks, change</span>
+      </button>
+      <button type="button" class="grade-btn" data-grade="4">
+        <span class="grade-num">Grade 4</span>
+        <span class="grade-desc">Numbers to 10 000, multiplication &amp; division, tenths, mean &amp; median, coordinates, angles</span>
+      </button>
+      <button type="button" class="grade-btn" data-grade="5">
+        <span class="grade-num">Grade 5</span>
+        <span class="grade-desc">Numbers to 100 000, fractions &amp; hundredths, percents, area, protractors, unit rates</span>
+      </button>
       <button type="button" class="grade-btn" data-grade="6">
         <span class="grade-num">Grade 6</span>
         <span class="grade-desc">Compare integers, fractions &amp; decimals, divisibility &amp; prime factors, ratios &amp; rates, linear patterns, equations &amp; inequalities, mean/median/mode/range, probability, angles, trapezoids &amp; surface area, coordinates</span>
@@ -514,7 +534,11 @@
     perMin: ['/min', 'permin', 'perminute', 'wpm', 'words/min', 'wordsperminute', 'wordsmin'],
     weeks: ['week', 'weeks', 'wk', 'wks'],
     months: ['month', 'months', 'mo'],
-    percent: ['%', 'percent']
+    percent: ['%', 'percent'],
+    cents: ['¢', 'c', 'cent', 'cents'],
+    minutes: ['min', 'mins', 'minute', 'minutes'],
+    seconds: ['s', 'sec', 'secs', 'second', 'seconds'],
+    hours: ['h', 'hr', 'hrs', 'hour', 'hours']
   };
   function units(...keys) {
     const out = [];
@@ -861,6 +885,8 @@
     { id: 'mixed', label: 'Mixed', strand: null },
     { id: 'integers', label: 'Integers', strand: 'Number' },
     { id: 'numbersense', label: 'Number Sense', strand: 'Number' },
+    { id: 'addsub', label: 'Add & Subtract', strand: 'Number' },
+    { id: 'multdiv', label: 'Multiply & Divide', strand: 'Number' },
     { id: 'factors', label: 'Factors & Powers', strand: 'Number' },
     { id: 'fractions', label: 'Fractions', strand: 'Number' },
     { id: 'decimals', label: 'Decimals', strand: 'Number' },
@@ -881,6 +907,11 @@
   const TOPIC_LABEL = Object.fromEntries(TOPICS.map(t => [t.id, t.label]));
 
   const GENERATORS = {};
+  // topics that have questions for a grade (the topic buttons and Mixed use this)
+  function topicsFor(grade) { return PRACTICE_TOPIC_IDS.filter(t => GENERATORS[t] && GENERATORS[t][grade]); }
+  // a few topics are named differently in the primary grades
+  const LABEL_BY_GRADE = { coordinates: { 1: 'Location & Movement', 2: 'Location & Movement', 3: 'Location & Movement' } };
+  function labelFor(id, grade) { return (LABEL_BY_GRADE[id] && LABEL_BY_GRADE[id][grade]) || TOPIC_LABEL[id]; }
 
   function ordinal(n) {
     const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
@@ -3090,7 +3121,7 @@
   };
 
   function generateProblem(topicId, grade) {
-    const actual = topicId === 'mixed' ? pick(PRACTICE_TOPIC_IDS) : topicId;
+    const actual = topicId === 'mixed' ? pick(topicsFor(grade)) : topicId;
     const p = pick(GENERATORS[actual][grade])();
     p.topicId = actual;
     return p;
@@ -4325,6 +4356,1625 @@
   GENERATORS.measurement[8] = [metric8, metric8, pythag8, pythag8, pythag8, pythag8, composite2D8, composite2D8, composite3D8, composite3D8];
   GENERATORS.financial[8] = [compound8, compound8, simpleVsCompound8, creditCard8, creditCard8, finPlan8, budget8, consumer8, consumer8, exchange8];
 
+  // =====================================================================
+  // GRADES 1-5 -- visuals (inline SVG / HTML).  Each drawing carries data-*
+  // attributes describing what it shows, so tests can check answers.
+  // =====================================================================
+  const SVG_FONT = 'font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif"';
+  function svgOpen(w, h, extra) { return `<svg viewBox="0 0 ${w} ${h}" width="${Math.min(w, 360)}" role="img" ${SVG_FONT} ${extra || ''}>`; }
+  const INK = '#1a2332', SOFT = '#e2e8f2', MUTED = '#6b7488';
+  const PAT_COLORS = [['red', '#e5484d'], ['blue', '#4f6df5'], ['green', '#17a673'], ['yellow', '#f5a623']];
+
+  // rows of counters (groups of five are spaced apart so they are easy to count)
+  function svgDots(n, o = {}) {
+    const per = o.perRow || 10, r = 9, gap = 26, pad = 14, rows = Math.ceil(n / per);
+    const W = pad * 2 + per * gap + 10, H = pad * 2 + rows * gap;
+    let s = svgOpen(W, H, `data-count="${n}"`);
+    for (let i = 0; i < n; i++) {
+      const row = Math.floor(i / per), col = i % per;
+      s += `<circle cx="${pad + col * gap + gap / 2 + (col >= 5 ? 10 : 0)}" cy="${pad + row * gap + gap / 2}" r="${r}" fill="${COLORS[o.color || 0]}" />`;
+    }
+    return s + '</svg>';
+  }
+  // ten frames (2 x 5), filled left to right
+  function svgTenFrames(n) {
+    const frames = Math.ceil(n / 10), cell = 30, pad = 12, W = pad * 2 + frames * (5 * cell + 16), H = pad * 2 + 2 * cell;
+    let s = svgOpen(W, H, `data-count="${n}"`), k = 0;
+    for (let f = 0; f < frames; f++) {
+      const x0 = pad + f * (5 * cell + 16);
+      s += `<rect x="${x0}" y="${pad}" width="${5 * cell}" height="${2 * cell}" fill="#fff" stroke="${INK}" stroke-width="1.5" />`;
+      for (let i = 1; i < 5; i++) s += `<line x1="${x0 + i * cell}" y1="${pad}" x2="${x0 + i * cell}" y2="${pad + 2 * cell}" stroke="${INK}" />`;
+      s += `<line x1="${x0}" y1="${pad + cell}" x2="${x0 + 5 * cell}" y2="${pad + cell}" stroke="${INK}" />`;
+      for (let i = 0; i < 10 && k < n; i++, k++) {
+        s += `<circle cx="${x0 + (i % 5) * cell + cell / 2}" cy="${pad + Math.floor(i / 5) * cell + cell / 2}" r="10" fill="${COLORS[0]}" />`;
+      }
+    }
+    return s + '</svg>';
+  }
+  function svgArray(rows, cols) {
+    const gap = 26, pad = 14, W = pad * 2 + cols * gap, H = pad * 2 + rows * gap;
+    let s = svgOpen(W, H, `data-rows="${rows}" data-cols="${cols}"`);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) s += `<circle cx="${pad + c * gap + gap / 2}" cy="${pad + r * gap + gap / 2}" r="9" fill="${COLORS[1]}" />`;
+    return s + '</svg>';
+  }
+  // shaded fraction: kind 'circle' or 'bar'
+  function svgFraction(n, d, kind) {
+    if (kind === 'bar') {
+      const W = 260, H = 70, x0 = 10, w = 240;
+      let s = svgOpen(W, H, `data-n="${n}" data-d="${d}"`);
+      for (let i = 0; i < d; i++) s += `<rect x="${x0 + i * w / d}" y="14" width="${w / d}" height="42" fill="${i < n ? COLORS[0] : '#fff'}" stroke="${INK}" stroke-width="1.5" />`;
+      return s + '</svg>';
+    }
+    const cx = 80, cy = 80, r = 66;
+    let s = svgOpen(160, 160, `data-n="${n}" data-d="${d}"`);
+    if (d === 1) return s + `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${n ? COLORS[0] : '#fff'}" stroke="${INK}" stroke-width="1.5" /></svg>`;
+    for (let i = 0; i < d; i++) {
+      const a0 = -Math.PI / 2 + i * 2 * Math.PI / d, a1 = -Math.PI / 2 + (i + 1) * 2 * Math.PI / d;
+      s += `<path d="M ${cx} ${cy} L ${cx + r * Math.cos(a0)} ${cy + r * Math.sin(a0)} A ${r} ${r} 0 0 1 ${cx + r * Math.cos(a1)} ${cy + r * Math.sin(a1)} Z" fill="${i < n ? COLORS[0] : '#fff'}" stroke="${INK}" stroke-width="1.5" />`;
+    }
+    return s + '</svg>';
+  }
+  // analog clock
+  function svgClock(h, m) {
+    const cx = 90, cy = 90;
+    let s = svgOpen(180, 180, `data-h="${h}" data-m="${m}"`);
+    s += `<circle cx="${cx}" cy="${cy}" r="80" fill="#fff" stroke="${INK}" stroke-width="2.5" />`;
+    for (let i = 0; i < 60; i++) {
+      const a = i * Math.PI / 30, len = i % 5 === 0 ? 8 : 4;
+      s += `<line x1="${cx + (80 - len) * Math.sin(a)}" y1="${cy - (80 - len) * Math.cos(a)}" x2="${cx + 80 * Math.sin(a)}" y2="${cy - 80 * Math.cos(a)}" stroke="${INK}" stroke-width="${i % 5 === 0 ? 2 : 1}" />`;
+    }
+    for (let n = 1; n <= 12; n++) {
+      const a = n * Math.PI / 6;
+      s += `<text x="${cx + 60 * Math.sin(a)}" y="${cy - 60 * Math.cos(a) + 5}" text-anchor="middle" font-size="15" font-weight="700" fill="${INK}">${n}</text>`;
+    }
+    const ha = ((h % 12) + m / 60) * Math.PI / 6, ma = m * Math.PI / 30;
+    s += `<line x1="${cx}" y1="${cy}" x2="${cx + 38 * Math.sin(ha)}" y2="${cy - 38 * Math.cos(ha)}" stroke="${INK}" stroke-width="5" stroke-linecap="round" />`;
+    s += `<line x1="${cx}" y1="${cy}" x2="${cx + 58 * Math.sin(ma)}" y2="${cy - 58 * Math.cos(ma)}" stroke="${COLORS[0]}" stroke-width="3" stroke-linecap="round" />`;
+    return s + `<circle cx="${cx}" cy="${cy}" r="4" fill="${INK}" /></svg>`;
+  }
+  // Canadian coins and bills.  items: [{ k: 'coin' | 'bill', cents, label }]
+  const COIN_STYLE = { 5: ['#b8bec8', 17], 10: ['#c9ced6', 14], 25: ['#aab2bd', 19], 100: ['#d9b44a', 20], 200: ['#d9b44a', 22] };
+  const BILL_STYLE = { 500: '#5b8def', 1000: '#8e5cf7', 2000: '#17a673', 5000: '#e5484d', 10000: '#b08968' };
+  function svgMoney(items) {
+    const W = 340, rowH = 52;
+    let x = 8, y = 6, s = '';
+    items.forEach(it => {
+      const w = it.k === 'bill' ? 76 : COIN_STYLE[it.cents][1] * 2 + 6;
+      if (x + w > W - 4) { x = 8; y += rowH; }
+      if (it.k === 'bill') {
+        s += `<rect x="${x}" y="${y + 4}" width="70" height="36" rx="4" fill="${BILL_STYLE[it.cents]}" opacity="0.9" /><text x="${x + 35}" y="${y + 28}" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">${it.label}</text>`;
+      } else {
+        const [col, r] = COIN_STYLE[it.cents];
+        s += `<circle cx="${x + r}" cy="${y + 22}" r="${r}" fill="${col}" stroke="${INK}" stroke-width="1.5" />`;
+        if (it.cents === 200) s += `<circle cx="${x + r}" cy="${y + 22}" r="${r - 7}" fill="none" stroke="#c4c9d1" stroke-width="5" />`;
+        s += `<text x="${x + r}" y="${y + 27}" text-anchor="middle" font-size="${it.cents >= 100 ? 12 : 11}" font-weight="700" fill="${INK}">${it.label}</text>`;
+      }
+      x += w;
+    });
+    const H = y + rowH;
+    return svgOpen(W, H, `data-cents="${items.map(i => i.cents).join(',')}"`) + s + '</svg>';
+  }
+  const COIN_ITEMS = { 5: { k: 'coin', cents: 5, label: '5¢' }, 10: { k: 'coin', cents: 10, label: '10¢' }, 25: { k: 'coin', cents: 25, label: '25¢' }, 100: { k: 'coin', cents: 100, label: '$1' }, 200: { k: 'coin', cents: 200, label: '$2' },
+    500: { k: 'bill', cents: 500, label: '$5' }, 1000: { k: 'bill', cents: 1000, label: '$10' }, 2000: { k: 'bill', cents: 2000, label: '$20' }, 5000: { k: 'bill', cents: 5000, label: '$50' }, 10000: { k: 'bill', cents: 10000, label: '$100' } };
+  // 2-D shapes
+  function svgShape(name) {
+    const reg = n => Array.from({ length: n }, (_, i) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return `${70 + 56 * Math.cos(a)},${68 + 56 * Math.sin(a)}`; }).join(' ');
+    let body;
+    if (name === 'circle') body = `<circle cx="70" cy="68" r="52" fill="${COLORS[0]}" fill-opacity="0.8" stroke="${INK}" stroke-width="2" />`;
+    else if (name === 'square') body = `<rect x="22" y="20" width="96" height="96" fill="${COLORS[0]}" fill-opacity="0.8" stroke="${INK}" stroke-width="2" />`;
+    else if (name === 'rectangle') body = `<rect x="10" y="32" width="120" height="68" fill="${COLORS[0]}" fill-opacity="0.8" stroke="${INK}" stroke-width="2" />`;
+    else body = `<polygon points="${reg({ triangle: 3, pentagon: 5, hexagon: 6, octagon: 8 }[name])}" fill="${COLORS[0]}" fill-opacity="0.8" stroke="${INK}" stroke-width="2" />`;
+    return svgOpen(140, 136, `data-shape="${name}"`) + body + '</svg>';
+  }
+  // an angle drawn at the vertex, opening deg degrees (0 < deg <= 180)
+  function svgAngle(deg) {
+    const vx = 120, vy = 110, L = 100, a = deg * Math.PI / 180;
+    let s = svgOpen(240, 130, `data-deg="${deg}"`);
+    s += `<line x1="${vx}" y1="${vy}" x2="${vx + L}" y2="${vy}" stroke="${INK}" stroke-width="3" stroke-linecap="round" />`;
+    s += `<line x1="${vx}" y1="${vy}" x2="${vx + L * Math.cos(a)}" y2="${vy - L * Math.sin(a)}" stroke="${COLORS[0]}" stroke-width="3" stroke-linecap="round" />`;
+    if (deg === 90) s += `<path d="M ${vx + 16} ${vy} L ${vx + 16} ${vy - 16} L ${vx} ${vy - 16}" fill="none" stroke="${INK}" stroke-width="1.5" />`;
+    else if (deg < 180) s += `<path d="M ${vx + 26} ${vy} A 26 26 0 ${deg > 180 ? 1 : 0} 0 ${vx + 26 * Math.cos(a)} ${vy - 26 * Math.sin(a)}" fill="none" stroke="${MUTED}" stroke-width="1.5" />`;
+    return s + `<circle cx="${vx}" cy="${vy}" r="3.5" fill="${INK}" /></svg>`;
+  }
+  // protractor with a ray at deg (read the outer scale: 0 on the right, 180 on the left)
+  function svgProtractor(deg) {
+    const cx = 150, cy = 132, R = 112;
+    let s = svgOpen(300, 152, `data-deg="${deg}"`);
+    s += `<path d="M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy} Z" fill="#fff" stroke="${INK}" stroke-width="1.5" />`;
+    for (let d = 0; d <= 180; d += 10) {
+      const a = d * Math.PI / 180, len = d % 30 === 0 ? 14 : 8;
+      s += `<line x1="${cx + R * Math.cos(a)}" y1="${cy - R * Math.sin(a)}" x2="${cx + (R - len) * Math.cos(a)}" y2="${cy - (R - len) * Math.sin(a)}" stroke="${INK}" />`;
+      if (d % 30 === 0) s += `<text x="${cx + (R + 15) * Math.cos(a)}" y="${cy - (R + 15) * Math.sin(a) + 4}" text-anchor="middle" font-size="12" font-weight="700" fill="${MUTED}">${d}</text>`;
+    }
+    const a = deg * Math.PI / 180;
+    s += `<line x1="${cx}" y1="${cy}" x2="${cx + R * Math.cos(a)}" y2="${cy - R * Math.sin(a)}" stroke="${COLORS[2]}" stroke-width="3" stroke-linecap="round" />`;
+    s += `<line x1="${cx - R}" y1="${cy}" x2="${cx + R}" y2="${cy}" stroke="${INK}" stroke-width="2" />`;
+    return s + `<circle cx="${cx}" cy="${cy}" r="3.5" fill="${INK}" /></svg>`;
+  }
+  // a ruler (0-15 cm) with an object lying along it from start to end
+  function svgRuler(start, end) {
+    const u = 21, x0 = 14, W = 15 * u + x0 * 2, H = 96;
+    let s = svgOpen(W, H, `data-start="${start}" data-end="${end}"`);
+    s += `<rect x="${x0 + start * u}" y="14" width="${(end - start) * u}" height="26" rx="4" fill="${COLORS[3]}" stroke="${INK}" />`;
+    s += `<rect x="${x0 - 6}" y="46" width="${15 * u + 12}" height="38" fill="#fdf3d8" stroke="${INK}" />`;
+    for (let i = 0; i <= 15; i++) {
+      s += `<line x1="${x0 + i * u}" y1="46" x2="${x0 + i * u}" y2="${i % 5 === 0 ? 66 : 60}" stroke="${INK}" />`;
+      s += `<text x="${x0 + i * u}" y="80" text-anchor="middle" font-size="10" fill="${INK}">${i}</text>`;
+    }
+    return s + '</svg>';
+  }
+  // grid of unit squares for area (all shaded)
+  function svgAreaGrid(w, h) {
+    const c = 26, pad = 8, W = pad * 2 + w * c, H = pad * 2 + h * c;
+    let s = svgOpen(W, H, `data-w="${w}" data-h="${h}"`);
+    for (let i = 0; i < w; i++) for (let j = 0; j < h; j++) s += `<rect x="${pad + i * c}" y="${pad + j * c}" width="${c}" height="${c}" fill="${COLORS[1]}" fill-opacity="0.35" stroke="${INK}" stroke-width="1" />`;
+    return s + '</svg>';
+  }
+  // first-quadrant grid: points [{x, y, label}], max coordinate M, scale = units per grid line
+  function svgGrid1(pts, o = {}) {
+    const M = o.max || 10, sc = o.scale || 1, cell = 26, pad = 30, n = Math.round(M / sc), size = pad + n * cell + 16;
+    let s = svgOpen(size, size, `data-scale="${sc}"`);
+    const X = v => pad + v / sc * cell, Y = v => size - 16 - v / sc * cell - 0;
+    for (let i = 0; i <= n; i++) {
+      s += `<line x1="${X(i * sc)}" y1="${Y(0)}" x2="${X(i * sc)}" y2="${Y(n * sc)}" stroke="${i ? SOFT : INK}" stroke-width="${i ? 1 : 2}" />`;
+      s += `<line x1="${X(0)}" y1="${Y(i * sc)}" x2="${X(n * sc)}" y2="${Y(i * sc)}" stroke="${i ? SOFT : INK}" stroke-width="${i ? 1 : 2}" />`;
+      s += `<text x="${X(i * sc)}" y="${Y(0) + 14}" text-anchor="middle" font-size="10" fill="${MUTED}">${i * sc}</text>`;
+      if (i) s += `<text x="${X(0) - 6}" y="${Y(i * sc) + 3}" text-anchor="end" font-size="10" fill="${MUTED}">${i * sc}</text>`;
+    }
+    if (o.vline !== undefined) s += `<line x1="${X(o.vline)}" y1="${Y(0)}" x2="${X(o.vline)}" y2="${Y(n * sc)}" stroke="${COLORS[2]}" stroke-width="2.5" stroke-dasharray="6 4" />`;
+    if (o.hline !== undefined) s += `<line x1="${X(0)}" y1="${Y(o.hline)}" x2="${X(n * sc)}" y2="${Y(o.hline)}" stroke="${COLORS[2]}" stroke-width="2.5" stroke-dasharray="6 4" />`;
+    (pts || []).forEach((p, i) => {
+      s += `<circle data-x="${p.x}" data-y="${p.y}" cx="${X(p.x)}" cy="${Y(p.y)}" r="5" fill="${COLORS[i === 0 ? 0 : 2]}" />`;
+      s += `<text x="${X(p.x) + 8}" y="${Y(p.y) - 7}" font-size="12" font-weight="700" fill="${INK}">${escapeHtml(p.label || '')}</text>`;
+    });
+    return s + '</svg>';
+  }
+  // a small map: columns A.., rows 1.. (row 1 at the bottom); items [{c, r, label}] with c, r starting at 1
+  function svgMapGrid(cols, rows, items) {
+    const cell = 52, pad = 26, W = pad + cols * cell + 8, H = pad + rows * cell + 8;
+    let s = svgOpen(W, H, '');
+    for (let c = 0; c < cols; c++) s += `<text x="${pad + c * cell + cell / 2}" y="${H - 4}" text-anchor="middle" font-size="13" font-weight="700" fill="${MUTED}">${String.fromCharCode(65 + c)}</text>`;
+    for (let r = 0; r < rows; r++) s += `<text x="${pad - 8}" y="${8 + (rows - 1 - r) * cell + cell / 2 + 4}" text-anchor="end" font-size="13" font-weight="700" fill="${MUTED}">${r + 1}</text>`;
+    for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) s += `<rect x="${pad + c * cell}" y="${8 + (rows - 1 - r) * cell}" width="${cell}" height="${cell}" fill="#fff" stroke="${SOFT}" />`;
+    items.forEach((it, i) => {
+      const x = pad + (it.c - 1) * cell, y = 8 + (rows - it.r) * cell;
+      s += `<rect data-item="${escapeHtml(it.label)}:${String.fromCharCode(64 + it.c)}${it.r}" x="${x + 4}" y="${y + 4}" width="${cell - 8}" height="${cell - 8}" rx="8" fill="${COLORS[i % COLORS.length]}" fill-opacity="0.85" />`;
+      s += `<text x="${x + cell / 2}" y="${y + cell / 2 + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">${escapeHtml(it.label)}</text>`;
+    });
+    return s + '</svg>';
+  }
+  // tally chart: rows [{label, count}]
+  function svgTally(rows, o = {}) {
+    const rowH = 34, W = 340, H = 40 + rows.length * rowH;
+    let s = svgOpen(W, H, '');
+    s += `<text x="${W / 2}" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="${INK}">${escapeHtml(o.title || '')}</text>`;
+    rows.forEach((r, i) => {
+      const y = 34 + i * rowH;
+      s += `<line x1="8" y1="${y + rowH - 4}" x2="${W - 8}" y2="${y + rowH - 4}" stroke="${SOFT}" />`;
+      s += `<text data-label="${escapeHtml(r.label)}" data-count="${r.count}" x="10" y="${y + 18}" font-size="13" fill="${INK}">${escapeHtml(r.label)}</text>`;
+      let x = 96;
+      for (let g = 0; g < Math.floor(r.count / 5); g++) {
+        for (let k = 0; k < 4; k++) s += `<line x1="${x + k * 7}" y1="${y + 3}" x2="${x + k * 7}" y2="${y + 23}" stroke="${INK}" stroke-width="2" stroke-linecap="round" />`;
+        s += `<line x1="${x - 4}" y1="${y + 19}" x2="${x + 25}" y2="${y + 7}" stroke="${INK}" stroke-width="2" stroke-linecap="round" />`;
+        x += 38;
+      }
+      for (let k = 0; k < r.count % 5; k++) s += `<line x1="${x + k * 7}" y1="${y + 3}" x2="${x + k * 7}" y2="${y + 23}" stroke="${INK}" stroke-width="2" stroke-linecap="round" />`;
+    });
+    return s + '</svg>';
+  }
+  // pictograph: rows [{label, count}] where each symbol stands for `each`
+  function svgPictograph(rows, each, o = {}) {
+    const rowH = 32, W = 340, H = 56 + rows.length * rowH;
+    let s = svgOpen(W, H, `data-each="${each}"`);
+    s += `<text x="${W / 2}" y="18" text-anchor="middle" font-size="13" font-weight="700" fill="${INK}">${escapeHtml(o.title || '')}</text>`;
+    rows.forEach((r, i) => {
+      const y = 30 + i * rowH;
+      s += `<text data-label="${escapeHtml(r.label)}" data-count="${r.count}" x="10" y="${y + 18}" font-size="13" fill="${INK}">${escapeHtml(r.label)}</text>`;
+      for (let k = 0; k < r.count / each; k++) s += `<circle cx="${110 + k * 22}" cy="${y + 13}" r="8" fill="${COLORS[i % COLORS.length]}" />`;
+    });
+    s += `<circle cx="14" cy="${H - 14}" r="7" fill="${MUTED}" /><text x="28" y="${H - 9}" font-size="12" fill="${INK}">= ${each}</text>`;
+    return s + '</svg>';
+  }
+  // line plot: values array (whole numbers); X marks stacked above a number line
+  function svgLinePlot(values, o = {}) {
+    const lo = o.min !== undefined ? o.min : Math.min(...values), hi = o.max !== undefined ? o.max : Math.max(...values);
+    const n = hi - lo + 1, u = Math.min(40, 300 / n), W = n * u + 40, counts = {};
+    values.forEach(v => { counts[v] = (counts[v] || 0) + 1; });
+    const maxC = Math.max(...Object.values(counts)), H = 60 + maxC * 20;
+    let s = svgOpen(W, H, '');
+    s += `<line x1="14" y1="${H - 30}" x2="${W - 14}" y2="${H - 30}" stroke="${INK}" stroke-width="2" />`;
+    for (let v = lo; v <= hi; v++) {
+      const x = 20 + (v - lo) * u + u / 2;
+      s += `<line x1="${x}" y1="${H - 34}" x2="${x}" y2="${H - 26}" stroke="${INK}" /><text x="${x}" y="${H - 12}" text-anchor="middle" font-size="12" fill="${INK}">${v}</text>`;
+      for (let k = 0; k < (counts[v] || 0); k++) s += `<text data-v="${v}" x="${x}" y="${H - 40 - k * 20}" text-anchor="middle" font-size="18" font-weight="700" fill="${COLORS[0]}">×</text>`;
+    }
+    if (o.title) s += `<text x="${W / 2}" y="14" text-anchor="middle" font-size="13" font-weight="700" fill="${INK}">${escapeHtml(o.title)}</text>`;
+    return s + '</svg>';
+  }
+  // two-series bar graph: clustered (default) or stacked.  names = [series1, series2]
+  function svgBar2(labels, a, b, names, o = {}) {
+    const W = 360, H = 250, L = 46, R = 12, T = 28, B = 62, plotW = W - L - R, plotH = H - T - B;
+    const totals = labels.map((_, i) => o.stacked ? a[i] + b[i] : Math.max(a[i], b[i]));
+    const step = o.step || niceStep(Math.max(...totals), 6), top = Math.ceil(Math.max(...totals) / step) * step;
+    let s = chartFrame(W, H, L, R, T, B, top, step, o.title, o.yTitle);
+    const slot = plotW / labels.length;
+    labels.forEach((lab, i) => {
+      const x0 = L + i * slot;
+      const rect = (x, w, v, base, ser, col) => `<rect data-series="${escapeHtml(names[ser])}" data-label="${escapeHtml(lab)}" data-v="${v}" x="${x}" y="${T + plotH - (base + v) / top * plotH}" width="${w}" height="${v / top * plotH}" fill="${col}" />`;
+      if (o.stacked) { const w = slot * 0.5; s += rect(x0 + (slot - w) / 2, w, a[i], 0, 0, COLORS[0]) + rect(x0 + (slot - w) / 2, w, b[i], a[i], 1, COLORS[1]); }
+      else { const w = slot * 0.34; s += rect(x0 + slot * 0.14, w, a[i], 0, 0, COLORS[0]) + rect(x0 + slot * 0.14 + w, w, b[i], 0, 1, COLORS[1]); }
+      s += `<text x="${x0 + slot / 2}" y="${H - B + 16}" text-anchor="middle" font-size="11" fill="${INK}">${escapeHtml(lab)}</text>`;
+    });
+    s += `<rect x="${L}" y="${H - 22}" width="12" height="12" fill="${COLORS[0]}" /><text x="${L + 17}" y="${H - 12}" font-size="12" fill="${INK}">${escapeHtml(names[0])}</text>`;
+    s += `<rect x="${L + 110}" y="${H - 22}" width="12" height="12" fill="${COLORS[1]}" /><text x="${L + 127}" y="${H - 12}" font-size="12" fill="${INK}">${escapeHtml(names[1])}</text>`;
+    return s + '</svg>';
+  }
+  // a pattern of coloured circles or plain shapes; tokens like {color: 'red'} or {shape: 'square'}; blanks shown as "?"
+  function svgPatternSeq(tokens, o = {}) {
+    const u = 38, W = (tokens.length + (o.blank ? 1 : 0)) * u + 20, H = 56;
+    let s = svgOpen(W, H, `data-seq="${tokens.map(t => t.color || t.shape).join(',')}"`);
+    const draw = (t, i) => {
+      const cx = 20 + i * u + u / 2 - 2, cy = 28, hex = t.color ? PAT_COLORS.find(c => c[0] === t.color)[1] : COLORS[0];
+      if (t.shape === 'square') return `<rect x="${cx - 13}" y="${cy - 13}" width="26" height="26" fill="${hex}" />`;
+      if (t.shape === 'triangle') return `<polygon points="${cx},${cy - 15} ${cx + 15},${cy + 12} ${cx - 15},${cy + 12}" fill="${hex}" />`;
+      return `<circle cx="${cx}" cy="${cy}" r="14" fill="${hex}" />`;
+    };
+    tokens.forEach((t, i) => { s += draw(t, i); });
+    if (o.blank) s += `<text x="${20 + tokens.length * u + u / 2 - 2}" y="35" text-anchor="middle" font-size="24" font-weight="700" fill="${MUTED}">?</text>`;
+    return s + '</svg>';
+  }
+  function stemLeafTable(stems) { // stems: [{stem, leaves: []}]
+    return '<table><tr><th>Stem</th><th>Leaf</th></tr>' + stems.map(r => `<tr><td>${r.stem}</td><td>${r.leaves.join(' ')}</td></tr>`).join('') + '</table>';
+  }
+
+  // =====================================================================
+  // GRADES 1-5 -- Number strand (Ontario 2020)
+  //   B1 number sense (whole numbers to 50 / 200 / 1000 / 10 000 / 100 000),
+  //   fractions (fair sharing, equivalent, add like denominators), decimals
+  //   (tenths, hundredths), percents; B2 operations, math facts, ratios/rates
+  // =====================================================================
+  const MAXN = { 1: 50, 2: 200, 3: 1000, 4: 10000, 5: 100000 };
+  const OBJECTS = [['apple', 'apples'], ['sticker', 'stickers'], ['marble', 'marbles'], ['cookie', 'cookies'], ['pencil', 'pencils'],
+    ['book', 'books'], ['balloon', 'balloons'], ['toy car', 'toy cars'], ['shell', 'shells'], ['crayon', 'crayons']];
+  function pobj() { return pick(OBJECTS); }
+  function cnt(n, o) { return `${n} ${n === 1 ? o[0] : o[1]}`; }
+  function pv(n, unit) { return `${n} ${unit}${n === 1 ? '' : 's'}`; }
+  function two(names) { const a = pick(names); let b = pick(names); while (b === a) b = pick(names); return [a, b]; }
+  function randN(g) { const max = MAXN[g]; return randInt(g === 1 ? 1 : Math.floor(max / 20), max); }
+
+  // ---------- number sense ----------
+  function pCount1() {
+    const frames = Math.random() < 0.4, n = frames ? randInt(3, 20) : randInt(4, 50);
+    return makeNum('numbersense', 'How many dots are there?', n, `Count the dots (the groups of ${frames ? 'ten' : 'five'} help you): there are ${n}.`,
+      { visual: frames ? svgTenFrames(n) : svgDots(n), hint: 'Enter a number.' });
+  }
+  function pCompare(g) {
+    const max = MAXN[g];
+    for (;;) {
+      const span = Math.max(2, Math.round(max / 20)), a = randN(g), b = Math.random() < 0.5 ? randN(g) : a + randInt(-span, span);
+      if (a === b || b < 1 || b > max) continue;
+      const greater = Math.random() < 0.5;
+      return makeNum('numbersense', `Which number is ${greater ? 'greater' : 'less'}: ${fmtBig(a)} or ${fmtBig(b)}?`, greater ? Math.max(a, b) : Math.min(a, b),
+        `Compare the digits from the left (biggest place value first). ${fmtBig(Math.max(a, b))} is greater than ${fmtBig(Math.min(a, b))}.`, { hint: 'Enter the number.' });
+    }
+  }
+  function pOrder(g) {
+    const n = g === 1 ? 3 : 4, set = new Set();
+    while (set.size < n) set.add(randN(g));
+    const list = [...set], up = Math.random() < 0.6;
+    const sorted = [...list].sort((a, b) => up ? a - b : b - a);
+    return makeSeq('numbersense', `Put these numbers in order from ${up ? 'least to greatest' : 'greatest to least'}: ${list.join(', ')}`, sorted,
+      `Compare the numbers. In order from ${up ? 'least to greatest' : 'greatest to least'}: ${sorted.join(', ')}.`, { hint: 'Enter the numbers separated by commas.' });
+  }
+  const SKIP_STEPS = { 1: [2, 5, 10], 2: [2, 5, 10, 20, 25, 50], 3: [5, 10, 50, 100, 200] };
+  function pSkip(g) {
+    const step = pick(SKIP_STEPS[g]), max = MAXN[g], hiK = Math.floor(max / step), n = Math.min(6, hiK + 1);
+    const back = g <= 2 && n >= 5 && Math.random() < 0.3;
+    const s0 = back ? step * randInt(n - 1, hiK) : step * randInt(0, hiK - (n - 1));
+    const terms = Array.from({ length: n }, (_, i) => back ? s0 - i * step : s0 + i * step);
+    const k = randInt(1, n - 1), shown = terms.map((t, i) => i === k ? '__' : String(t));
+    return makeNum('numbersense', `Count ${back ? 'back' : 'up'} by ${step}s: ${shown.join(', ')}. What number goes in the blank?`, terms[k],
+      `The numbers ${back ? 'go down' : 'go up'} by ${step} each time. ${terms[k]} fits in the blank.`, { hint: 'Enter the missing number.' });
+  }
+  function distinctDigits(len) {
+    for (;;) {
+      const d = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, len);
+      if (d[0] !== 0) return d;
+    }
+  }
+  function pPlace(g) {
+    if (g === 1) {
+      const n = randInt(11, 50), t = Math.floor(n / 10), o = n % 10;
+      return makeNum('numbersense', `The number ${n} is made of ${pv(t, 'ten')} and some ones. How many ones are there?`, o,
+        `${n} = ${t} × 10 + ${o}, so there ${o === 1 ? 'is' : 'are'} ${o} ${o === 1 ? 'one' : 'ones'}.`, { hint: 'Enter a number.' });
+    }
+    if (g === 2) {
+      if (Math.random() < 0.5) {
+        const t = randInt(0, 9), o = randInt(0, 9);
+        return makeNum('numbersense', `What number is 1 hundred + ${pv(t, 'ten')} + ${pv(o, 'one')}?`, 100 + t * 10 + o,
+          `100 + ${t * 10} + ${o} = ${100 + t * 10 + o}.`, { hint: 'Enter a number.' });
+      }
+      const n = randInt(101, 199);
+      return makeNum('numbersense', `How many tens are in the number ${n}?`, Math.floor(n / 10),
+        `${n} = ${Math.floor(n / 10)} tens and ${n % 10} ${n % 10 === 1 ? 'one' : 'ones'}. (10 tens make 1 hundred, so 1 hundred and ${Math.floor((n - 100) / 10)} tens is ${Math.floor(n / 10)} tens.)`, { hint: 'Enter a number.' });
+    }
+    const len = g === 3 ? 3 : g === 4 ? 4 : 5, d = distinctDigits(len);
+    const val = Number(d.join(''));
+    if (Math.random() < 0.55 && d.every(x => x !== 0)) {
+      const names = ['ones', 'tens', 'hundreds', 'thousands', 'ten-thousands'];
+      const parts = d.map((x, i) => `${x * Math.pow(10, len - 1 - i)}`);
+      return makeNum('numbersense', `What number is ${parts.map(fmtBig).join(' + ')}?`, val, `Add the place values: ${parts.map(fmtBig).join(' + ')} = ${fmtBig(val)}.`, { hint: 'Enter a number.' });
+    }
+    const idx = randInt(0, len - 1), place = Math.pow(10, len - 1 - idx);
+    return makeNum('numbersense', `In ${fmtBig(val)}, what is the value of the digit ${d[idx]}?`, d[idx] * place,
+      `The digit ${d[idx]} is in the ${place === 1 ? 'ones' : place === 10 ? 'tens' : place === 100 ? 'hundreds' : place === 1000 ? 'thousands' : 'ten-thousands'} place, so its value is ${fmtBig(d[idx] * place)}.`, { hint: 'Enter the value, like 500.' });
+  }
+  const MOVE_UNITS = { 1: [1, 1, 10], 2: [1, 10, 10, 100], 3: [1, 10, 100], 4: [10, 100, 1000], 5: [100, 1000, 10000] };
+  function pMoreLess(g) {
+    const u = pick(MOVE_UNITS[g]), more = Math.random() < 0.5, max = MAXN[g];
+    const n = more ? randInt(Math.max(1, Math.floor(max / 10)), max - u) : randInt(u + 1, max);
+    const ans = more ? n + u : n - u;
+    if (g === 1 && u === 1 && Math.random() < 0.5) {
+      return makeNum('numbersense', `What number comes just ${more ? 'after' : 'before'} ${n}?`, ans, `${more ? 'One more' : 'One less'} than ${n} is ${ans}.`, { hint: 'Enter a number.' });
+    }
+    return makeNum('numbersense', `What is ${fmtBig(u)} ${more ? 'more' : 'less'} than ${fmtBig(n)}?`, ans,
+      `${more ? 'Add' : 'Subtract'} ${fmtBig(u)}: ${fmtBig(n)} ${more ? '+' : '−'} ${fmtBig(u)} = ${fmtBig(ans)}.`, { hint: 'Enter a number.' });
+  }
+  function pEvenOdd(g) {
+    const n = randInt(2, Math.min(MAXN[g], 999)), even = n % 2 === 0;
+    return makeText('numbersense', `Is ${n} an even number or an odd number?`, [even ? 'even' : 'odd'], even ? 'even' : 'odd',
+      `Even numbers end in 0, 2, 4, 6 or 8 and can be split into 2 equal groups. ${n} ends in ${n % 10}, so it is ${even ? 'even' : 'odd'}.`, { hint: 'Type even or odd.' });
+  }
+  function pRound(g) {
+    const unit = g === 3 ? pick([10, 100]) : pick([10, 100, 1000]), max = MAXN[g];
+    const n = randInt(unit + 1, max - 1), ans = Math.floor((n + unit / 2) / unit) * unit;
+    const word = unit === 10 ? 'ten' : unit === 100 ? 'hundred' : 'thousand';
+    return makeNum('numbersense', `Round ${fmtBig(n)} to the nearest ${word}.`, ans,
+      `Look at the digit to the right of the ${word}s place. If it is 5 or more, round up; if it is less than 5, round down. ${fmtBig(n)} rounds to ${fmtBig(ans)}.`, { hint: 'Enter a number.' });
+  }
+
+  // ---------- add and subtract ----------
+  function addSubPair(g) {
+    const sub = Math.random() < 0.5;
+    let M;
+    if (g === 1) M = pick([10, 20, 20, 50]); else if (g === 2) M = pick([20, 50, 100, 100]); else M = MAXN[g];
+    const lo = M <= 20 ? 0 : Math.floor(M / 20);
+    if (sub) {
+      const a = randInt(Math.max(lo, 2), M), b = randInt(1, a - 1 || 1);
+      return { a, b, sub, res: a - b };
+    }
+    const a = randInt(lo || 1, M - 1), b = randInt(1, M - a);
+    return { a, b, sub, res: a + b };
+  }
+  function pAddSub(g) {
+    if (g >= 4 && Math.random() < 0.35) {
+      const dp = g === 4 ? 1 : 2, f = Math.pow(10, dp);
+      const x = randInt(11 * f / 10, 99 * f) / f, y = randInt(11 * f / 10, 99 * f) / f, sub = Math.random() < 0.5;
+      const a = sub ? Math.max(x, y) : x, b = sub ? Math.min(x, y) : y;
+      if (sub && a === b) return pAddSub(g);
+      const res = r6(sub ? a - b : a + b);
+      return makeNum('addsub', `${a.toFixed(dp)} ${sub ? '−' : '+'} ${b.toFixed(dp)} = ?`, res,
+        `Line up the decimal points and ${sub ? 'subtract' : 'add'}: ${a.toFixed(dp)} ${sub ? '−' : '+'} ${b.toFixed(dp)} = ${res.toFixed(dp)}.`, { tol: 1e-9, hint: 'Enter a decimal number.' });
+    }
+    const { a, b, sub, res } = addSubPair(g);
+    return makeNum('addsub', `${fmtBig(a)} ${sub ? '−' : '+'} ${fmtBig(b)} = ?`, res,
+      g <= 2 ? `Use a number line or number facts. ${a} ${sub ? '−' : '+'} ${b} = ${res}.` : `Line up the digits by place value and ${sub ? 'subtract' : 'add'}, regrouping when needed: ${fmtBig(a)} ${sub ? '−' : '+'} ${fmtBig(b)} = ${fmtBig(res)}.`, { hint: 'Enter a number.' });
+  }
+  function pMissing(g) {
+    const M = g === 1 ? pick([10, 20]) : g === 2 ? pick([20, 100]) : 1000;
+    const a = randInt(1, M - 1), c = randInt(a + 1, M), b = c - a, form = randInt(1, 4);
+    if (form === 1) return makeNum('addsub', `${a} + ? = ${c}`, b, `Think: what do you add to ${a} to get ${c}? ${c} − ${a} = ${b}.`, { hint: 'Enter the missing number.' });
+    if (form === 2) return makeNum('addsub', `? + ${b} = ${c}`, a, `Think: ${c} − ${b} = ${a}, so ${a} + ${b} = ${c}.`, { hint: 'Enter the missing number.' });
+    if (form === 3) return makeNum('addsub', `${c} − ? = ${a}`, b, `Think: ${c} − ${b} = ${a}, so the missing number is ${b}.`, { hint: 'Enter the missing number.' });
+    return makeNum('addsub', `? − ${b} = ${a}`, c, `Add ${b} to ${a}: ${a} + ${b} = ${c}.`, { hint: 'Enter the missing number.' });
+  }
+  function pStory(g) {
+    const o = pobj(), [n1, n2] = two(NAMES), t = randInt(1, 3);
+    const M = g === 1 ? pick([10, 20, 20, 50]) : g === 2 ? pick([20, 50, 100]) : MAXN[g];
+    if (t === 1) {
+      const a = randInt(2, M - 2), b = randInt(1, M - a);
+      return makeNum('addsub', `${n1} has ${cnt(a, o)}. ${n2} gives ${n1} ${b} more. How many ${o[1]} does ${n1} have now?`, a + b,
+        `Joining is adding: ${a} + ${b} = ${a + b}.`, { hint: 'Enter a number.' });
+    }
+    if (t === 2) {
+      const a = randInt(3, M), b = randInt(1, a - 1);
+      return makeNum('addsub', `${n1} had ${cnt(a, o)} and gave away ${b}. How many ${o[1]} does ${n1} have left?`, a - b,
+        `Taking away is subtracting: ${a} − ${b} = ${a - b}.`, { hint: 'Enter a number.' });
+    }
+    const a = randInt(3, M), b = randInt(1, a - 1);
+    return makeNum('addsub', `${n1} has ${a} ${o[1]}. ${n2} has ${b} ${o[1]}. How many more ${o[1]} does ${n1} have than ${n2}?`, a - b,
+      `Comparing is subtracting: ${a} − ${b} = ${a - b}.`, { hint: 'Enter a number.' });
+  }
+  function pRelated(g) {
+    const M = g === 1 ? 20 : 20, a = randInt(2, M - 3), b = randInt(2, M - a), c = a + b, add = Math.random() < 0.5;
+    if (add) return makeNum('addsub', `If ${a} + ${b} = ${c}, what is ${c} − ${b}?`, a, `Subtraction undoes addition: ${c} − ${b} = ${a}.`, { hint: 'Enter a number.' });
+    return makeNum('addsub', `If ${c} − ${b} = ${a}, what is ${a} + ${b}?`, c, `Addition undoes subtraction: ${a} + ${b} = ${c}.`, { hint: 'Enter a number.' });
+  }
+  function pEstimate(g) {
+    const unit = g === 3 ? 100 : pick([100, 1000]), M = MAXN[g], sub = Math.random() < 0.4;
+    const a = randInt(Math.floor(M / 5), M - unit), b = randInt(unit, sub ? a - unit : M - a);
+    if (b < unit || (sub && a - unit < unit)) return pEstimate(g);
+    const ra = Math.floor((a + unit / 2) / unit) * unit, rb = Math.floor((b + unit / 2) / unit) * unit;
+    return makeNum('addsub', `Estimate ${fmtBig(a)} ${sub ? '−' : '+'} ${fmtBig(b)} by rounding each number to the nearest ${unit === 100 ? 'hundred' : 'thousand'}.`, sub ? ra - rb : ra + rb,
+      `${fmtBig(a)} rounds to ${fmtBig(ra)} and ${fmtBig(b)} rounds to ${fmtBig(rb)}. ${fmtBig(ra)} ${sub ? '−' : '+'} ${fmtBig(rb)} = ${fmtBig(sub ? ra - rb : ra + rb)}.`, { hint: 'Enter a number.' });
+  }
+  GENERATORS.numbersense = GENERATORS.numbersense || {};
+  GENERATORS.addsub = {};
+  GENERATORS.multdiv = {};
+
+  // ---------- multiply and divide ----------
+  function pGroups1() {
+    const o = pobj();
+    if (Math.random() < 0.6) {
+      const opts = [[2, 2], [2, 3], [2, 4], [2, 5], [3, 2], [3, 3], [4, 2], [5, 2]], [g, e] = pick(opts);
+      return makeNum('multdiv', `There are ${g} bags with ${e} ${o[1]} in each bag. How many ${o[1]} are there in all?`, g * e,
+        `${g} groups of ${e}: ${Array(g).fill(e).join(' + ')} = ${g * e}.`, { hint: 'Enter a number.' });
+    }
+    const k = randInt(1, 5), nm = pick(['two friends', 'two children']);
+    return makeNum('multdiv', `${2 * k} ${o[1]} are shared equally between ${nm}. How many does each one get?`, k,
+      `Share them one at a time into 2 equal groups: each one gets ${k}.`, { hint: 'Enter a number.' });
+  }
+  function pGroups2() {
+    const o = pobj(), t = randInt(1, 4);
+    if (t === 1) {
+      const e = pick([2, 3, 4, 5, 10]), g = randInt(2, Math.min(10, Math.floor(50 / e)));
+      return makeNum('multdiv', `${pick(NAMES)} makes ${g} groups of ${e} ${o[1]}. How many ${o[1]} are there in all?`, g * e,
+        `${Array(g).fill(e).join(' + ')} = ${g * e}, or ${g} × ${e} = ${g * e}.`, { hint: 'Enter a number.' });
+    }
+    if (t === 2) {
+      const e = randInt(2, 9), g = randInt(3, 7);
+      return makeNum('multdiv', `${Array(g).fill(e).join(' + ')} = ?`, g * e, `Add equal groups: ${g} groups of ${e} is ${g * e}.`, { hint: 'Enter a number.' });
+    }
+    if (t === 3) {
+      const s = pick([2, 3, 4, 6]), each = randInt(1, Math.floor(12 / s)), total = s * each;
+      return makeNum('multdiv', `${total} ${o[1]} are shared equally among ${s} children. How many does each child get?`, each,
+        `Share equally: ${total} ÷ ${s} = ${each}.`, { hint: 'Enter a number.' });
+    }
+    const half = Math.random() < 0.5, d = half ? 2 : 4, k = randInt(1, half ? 5 : 3), g = d * k;
+    return makeNum('multdiv', `${g} groups of one ${half ? 'half' : 'fourth'} make how many whole ones?`, k,
+      `${g} ${half ? 'halves' : 'fourths'}: every ${d} make 1 whole, so ${g} ÷ ${d} = ${k}.`, { hint: 'Enter a whole number.' });
+  }
+  const FACT_SETS = { 3: [2, 5, 10], 4: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 5: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] };
+  function pFact(g) {
+    const set = FACT_SETS[g], a = pick(set.filter(x => x > 1)), b = g === 3 ? randInt(1, 10) : g === 4 ? randInt(1, 10) : randInt(0, 12), t = randInt(1, 3);
+    if (t === 1) return makeNum('multdiv', `${a} × ${b} = ?`, a * b, `${a} groups of ${b} make ${a * b}.`, { hint: 'Enter a number.' });
+    const b2 = b < 2 ? randInt(2, g === 3 ? 10 : 12) : b;
+    if (t === 2) return makeNum('multdiv', `${a * b2} ÷ ${a} = ?`, b2, `Think of the multiplication fact ${a} × ${b2} = ${a * b2}, so ${a * b2} ÷ ${a} = ${b2}.`, { hint: 'Enter a number.' });
+    return makeNum('multdiv', `${a} × ? = ${a * b2}`, b2, `Think: ${a * b2} ÷ ${a} = ${b2}, so ${a} × ${b2} = ${a * b2}.`, { hint: 'Enter the missing number.' });
+  }
+  function pArray(g) {
+    const r = randInt(2, g === 3 ? 6 : 8), c = randInt(2, g === 3 ? 6 : 8);
+    return makeNum('multdiv', 'How many dots are in this array?', r * c, `There are ${r} rows with ${c} dots in each row: ${r} × ${c} = ${r * c}.`, { visual: svgArray(r, c), hint: 'Enter a number.' });
+  }
+  function pMultStory(g) {
+    const o = pobj(), t = randInt(1, 3), maxF = g === 3 ? 10 : g === 4 ? 10 : 12;
+    const a = randInt(2, maxF), b = randInt(2, maxF), s = pick(g === 3 ? [2, 5, 10] : [2, 3, 4, 5, 6, 7, 8, 9]);
+    if (t === 1) return makeNum('multdiv', `There are ${a} boxes with ${b} ${o[1]} in each box. How many ${o[1]} are there in all?`, a * b, `${a} × ${b} = ${a * b}.`, { hint: 'Enter a number.' });
+    const each = randInt(2, maxF), tot = s * each;
+    if (t === 2) return makeNum('multdiv', `${tot} ${o[1]} are shared equally among ${s} children. How many does each child get?`, each, `${tot} ÷ ${s} = ${each}.`, { hint: 'Enter a number.' });
+    return makeNum('multdiv', `${tot} ${o[1]} are put into bags with ${s} in each bag. How many bags are needed?`, each, `${tot} ÷ ${s} = ${each}.`, { hint: 'Enter a number.' });
+  }
+  function pFracGroups3() {
+    const d = pick([2, 3, 4]), g = randInt(2, 6);
+    return makeFrac('multdiv', `${g} groups of 1/${d} = ?`, g, d, `${Array(g).fill('1/' + d).join(' + ')} = ${g}/${d}${g > d ? ', which is ' + mixedStr(g, d) : ''}.`, { hint: 'Enter a fraction or mixed number.' });
+  }
+  function pPow10(g) {
+    const t = randInt(1, 3);
+    if (t === 3) {
+      const a = randInt(2, 99) * 10;
+      return makeNum('multdiv', `${a} ÷ 10 = ?`, a / 10, `Dividing by 10 moves each digit one place to the right: ${a} ÷ 10 = ${a / 10}.`, { hint: 'Enter a number.' });
+    }
+    const a = randInt(2, g === 4 ? 99 : 99), p = pick([10, 100, 1000]);
+    return makeNum('multdiv', `${a} × ${p} = ?`, a * p, `Multiplying by ${p} adds ${String(p).length - 1} zero${p > 10 ? 's' : ''}: ${a} × ${p} = ${fmtBig(a * p)}.`, { hint: 'Enter a number.' });
+  }
+  function pMul1(g) {
+    const a = randInt(g === 4 ? 12 : 12, g === 4 ? 999 : 999), b = randInt(2, 9);
+    return makeNum('multdiv', `${a} × ${b} = ?`, a * b, `Break ${a} into place values and multiply each part by ${b}, then add: ${a} × ${b} = ${a * b}.`, { hint: 'Enter a number.' });
+  }
+  function pDiv1() {
+    const b = randInt(2, 9);
+    if (Math.random() < 0.5) {
+      const q = randInt(5, 110), a = b * q;
+      return makeNum('multdiv', `${a} ÷ ${b} = ?`, q, `${b} × ${q} = ${a}, so ${a} ÷ ${b} = ${q}.`, { hint: 'Enter a number.' });
+    }
+    const a = randInt(20, 400);
+    if (a % b === 0) return pDiv1();
+    const r = reduceFrac(a, b);
+    return makeFrac('multdiv', `${a} ÷ ${b} = ? (Write any remainder as a fraction.)`, a, b,
+      `${a} ÷ ${b} = ${Math.floor(a / b)} with a remainder of ${a % b}. The remainder is shared into ${b} parts: ${mixedStr(r.n, r.d)}.`, { hint: 'Enter a whole number or a mixed number like 4 1/4.' });
+  }
+  function pMul2x2() {
+    const a = randInt(11, 99), b = randInt(11, 99);
+    return makeNum('multdiv', `${a} × ${b} = ?`, a * b, `Area model: ${a} × ${b} = (${a} × ${Math.floor(b / 10) * 10}) + (${a} × ${b % 10}) = ${a * Math.floor(b / 10) * 10} + ${a * (b % 10)} = ${a * b}.`, { hint: 'Enter a number.' });
+  }
+  function pDiv3by2() {
+    if (Math.random() < 0.4) {
+      const b = randInt(11, 49), q = randInt(3, Math.floor(999 / b)), a = b * q;
+      if (a < 100) return pDiv3by2();
+      return makeNum('multdiv', `${a} ÷ ${b} = ?`, q, `${b} × ${q} = ${a}, so ${a} ÷ ${b} = ${q}.`, { hint: 'Enter a number.' });
+    }
+    const cap = randInt(12, 48), n = randInt(100, 999), q = Math.floor(n / cap), r = n % cap;
+    if (r === 0) return pDiv3by2();
+    if (Math.random() < 0.5) {
+      return makeNum('multdiv', `${n} students are going on a trip. Each bus holds ${cap} students. How many buses are needed?`, q + 1,
+        `${n} ÷ ${cap} = ${q} with ${r} left over. The ${r} students still need a bus, so ${q + 1} buses are needed.`, { hint: 'Enter a number.' });
+    }
+    return makeNum('multdiv', `${n} students are going on a trip. Each bus holds ${cap} students. How many buses will be completely full?`, q,
+      `${n} ÷ ${cap} = ${q} with ${r} left over. ${q} buses are completely full.`, { hint: 'Enter a number.' });
+  }
+
+  // ---------- fractions ----------
+  function fairShare(g) {
+    const sharers = g === 1 ? [2, 4] : g === 2 ? [2, 3, 4, 6] : [2, 3, 4, 5, 6, 8, 10], maxItems = g === 1 ? 10 : g === 2 ? 10 : 20;
+    for (;;) {
+      const s = pick(sharers), n = randInt(2, maxItems);
+      if (g === 1 && !(n % s === 1 || n % s === 2 && s === 4)) continue;
+      if (g >= 2 && n % s === 0 && Math.random() < 0.7) continue;
+      const food = pick(['sandwiches', 'pancakes', 'muffins', 'pizzas', 'granola bars']), who = pick(['children', 'friends']);
+      const r = reduceFrac(n, s);
+      return makeFrac('fractions', `${n} ${food} are shared equally among ${s} ${who}. How much does each one get?`, n, s,
+        `Share equally: ${n} ÷ ${s}. ${n % s === 0 ? `Each gets ${n / s}.` : `Each gets ${mixedStr(r.n, r.d)}.`}`, { hint: 'Enter a whole number, a fraction like 3/4, or a mixed number like 2 1/2.' });
+    }
+  }
+  function halfFourth12(g) {
+    const pairs = g === 1 ? [['1/2', '2/4', true], ['1/2', '1/4', false], ['2/4', '3/4', false], ['2/4', '1/2', true]]
+      : [['1/3', '2/6', true], ['1/3', '2/3', false], ['2/6', '1/3', true], ['1/2', '2/4', true], ['1/3', '3/6', false], ['1/2', '3/6', true]];
+    const [a, b, yes] = pick(pairs);
+    return makeYesNo('fractions', `Are ${a} of a pizza and ${b} of the same pizza the same amount?`, yes,
+      yes ? `Cutting each piece in half doubles the number of pieces, so ${a} and ${b} cover the same amount.` : `${a} and ${b} are not the same amount.`);
+  }
+  function unitCompare1() {
+    let a = randInt(2, 8), b = randInt(2, 8);
+    while (a === b) b = randInt(2, 8);
+    const ans = a < b ? a : b;
+    return makeText('fractions', `A pizza is shared equally among ${a} children. An identical pizza is shared equally among ${b} children. Which share is bigger: 1/${a} or 1/${b}?`, [`1/${ans}`], `1/${ans}`,
+      `The fewer the sharers, the bigger each share. 1/${ans} is bigger.`, { hint: 'Type 1/ and the number, like 1/4.' });
+  }
+  const FAMILIES = [[2, 4, 8], [3, 6], [5, 10]];
+  function equiv3() {
+    const fam = pick(FAMILIES), i = randInt(0, fam.length - 2), j = randInt(i + 1, fam.length - 1), d1 = fam[i], d2 = fam[j], n = randInt(1, d1 - 1), k = d2 / d1;
+    return makeNum('fractions', `${n}/${d1} = ?/${d2}`, n * k, `${d2} ÷ ${d1} = ${k}, so multiply the top and bottom by ${k}: ${n}/${d1} = ${n * k}/${d2}.`, { hint: 'Enter the missing numerator.' });
+  }
+  function repeatedUnit3() {
+    const d = pick([3, 4, 5, 6, 8, 10]), n = randInt(2, d - 1);
+    if (Math.random() < 0.5) return makeNum('fractions', `${Array(n).fill('1/' + d).join(' + ')} = ?/${d}`, n, `Adding ${n} pieces that are each 1/${d} gives ${n}/${d}.`, { hint: 'Enter the missing numerator.' });
+    return makeNum('fractions', `${n}/${d} is the same as how many pieces of size 1/${d}?`, n, `The numerator ${n} tells how many pieces of size 1/${d} there are.`, { hint: 'Enter a number.' });
+  }
+  function fracName4(g) {
+    const d = g === 4 ? pick([2, 3, 4, 5, 6, 8, 10]) : pick([2, 3, 4, 5, 6, 8, 10, 12]), n = randInt(1, d - 1), kind = pick(['circle', 'bar']);
+    return makeFrac('fractions', 'What fraction of the shape is shaded?', n, d, `The shape is cut into ${d} equal parts and ${n} ${n === 1 ? 'is' : 'are'} shaded, so ${n}/${d} is shaded.`, { visual: svgFraction(n, d, kind), hint: 'Enter a fraction like 3/8.' });
+  }
+  function fracCompare(g) {
+    const hi = g === 4 ? [2, 3, 4, 5, 6, 8, 10] : [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    for (let i = 0; i < 200; i++) {
+      let n1, d1, n2, d2;
+      const t = randInt(1, g === 4 ? 2 : 3);
+      if (t === 1) { d1 = d2 = pick(hi.filter(d => d > 3)); n1 = randInt(1, d1 - 1); n2 = randInt(1, d1 - 1); }
+      else if (t === 2) { n1 = n2 = randInt(1, 4); d1 = pick(hi.filter(d => d > n1)); d2 = pick(hi.filter(d => d > n1)); }
+      else { d1 = pick(hi); d2 = pick(hi); n1 = randInt(1, d1 * 2 - 1); n2 = randInt(1, d2 * 2 - 1); }
+      if (n1 * d2 === n2 * d1) continue;
+      const greater = Math.random() < 0.5, v1 = n1 / d1, v2 = n2 / d2, pickA = (v1 > v2) === greater;
+      const ans = pickA ? [n1, d1] : [n2, d2];
+      return makeRat('fractions', `Which fraction is ${greater ? 'greater' : 'less'}: ${n1}/${d1} or ${n2}/${d2}?`, ans[0] / ans[1],
+        `Compare ${n1}/${d1} and ${n2}/${d2}${d1 === d2 ? ': same-size pieces, so the one with more pieces is greater' : n1 === n2 ? ': the same number of pieces, so smaller pieces (a bigger denominator) mean less' : ' using a common denominator or a benchmark like 1/2'}. The ${greater ? 'greater' : 'lesser'} fraction is ${ans[0]}/${ans[1]}.`,
+        { display: `${ans[0]}/${ans[1]}`, hint: 'Enter the fraction.', tol: 1e-9 });
+    }
+    return fracCompare(g);
+  }
+  function countByFracs4() {
+    const d = pick([2, 3, 4, 5, 6, 8, 10]), start = randInt(1, d - 1) , terms = Array.from({ length: 5 }, (_, i) => start + i), k = randInt(2, 4);
+    const show = terms.map((n, i) => i === k ? '__' : (n % d === 0 ? String(n / d) : n > d ? mixedStr(n, d) : `${n}/${d}`));
+    const ans = terms[k];
+    const r = reduceFrac(ans, d);
+    return makeFrac('fractions', `Count by 1/${d}s: ${show.join(', ')}. What number goes in the blank?`, ans, d, `Each step adds 1/${d}. The blank is ${ans}/${d}${r.n !== ans ? ' = ' + (r.d === 1 ? r.n : mixedStr(r.n, r.d)) : ans > d ? ' = ' + mixedStr(ans, d) : ''}.`,
+      { hint: 'Enter a fraction or mixed number.' });
+  }
+  function unitMultiple4() {
+    const d = pick([2, 3, 4, 5, 6, 8, 10]), n = randInt(2, 9);
+    return makeFrac('fractions', `${n} × 1/${d} = ?`, n, d, `${n} × 1/${d} is ${n} pieces of 1/${d}, which is ${n}/${d}${n > d ? ' = ' + mixedStr(n, d) : ''}.`, { hint: 'Enter a fraction or mixed number.' });
+  }
+  function mixedConvert5() {
+    const d = pick([2, 3, 4, 5, 6, 8, 10, 12]), w = randInt(1, 5), n = randInt(1, d - 1);
+    if (gcd(n, d) !== 1) return mixedConvert5();
+    const N = w * d + n;
+    if (Math.random() < 0.5) {
+      return makeText('fractions', `Write ${N}/${d} as a mixed number.`, [`${w} ${n}/${d}`], `${w} ${n}/${d}`, `${N} ÷ ${d} = ${w} with ${n} left over, so ${N}/${d} = ${w} ${n}/${d}.`, { hint: 'Type it like 2 3/4.' });
+    }
+    return makeText('fractions', `Write ${w} ${n}/${d} as an improper fraction.`, [`${N}/${d}`], `${N}/${d}`, `${w} × ${d} + ${n} = ${N}, so ${w} ${n}/${d} = ${N}/${d}.`, { hint: 'Type it like 11/4.' });
+  }
+  function equiv5() {
+    const d1 = randInt(2, 6), k = randInt(2, Math.floor(12 / d1)), d2 = d1 * k, n = randInt(1, d1 * 2 - 1);
+    return makeNum('fractions', `${n}/${d1} = ?/${d2}`, n * k, `${d2} ÷ ${d1} = ${k}, so multiply the top and bottom by ${k}: ${n}/${d1} = ${n * k}/${d2}.`, { hint: 'Enter the missing numerator.' });
+  }
+  function order5() {
+    for (;;) {
+      const fr = Array.from({ length: 3 }, () => { const d = pick([2, 3, 4, 5, 6, 8, 10, 12]); return [randInt(1, d + 3), d]; });
+      const vals = fr.map(f => f[0] / f[1]);
+      if (new Set(vals.map(v => Math.round(v * 1e6))).size < 3) continue;
+      const sorted = fr.slice().sort((a, b) => a[0] / a[1] - b[0] / b[1]), txt = f => `${f[0]}/${f[1]}`;
+      return makeRatSeq('fractions', `Order from least to greatest: ${fr.map(txt).join(', ')}`, sorted.map(f => f[0] / f[1]), sorted.map(txt).join(', '),
+        `Change each to a decimal or use a common denominator: ${sorted.map(f => `${txt(f)} ≈ ${n2s(Math.round(f[0] / f[1] * 100) / 100)}`).join('; ')}.`);
+    }
+  }
+  function addSubLike5() {
+    const d = pick([3, 4, 5, 6, 8, 10, 12]), sub = Math.random() < 0.45;
+    let n1 = randInt(1, d + d / 2 | 0), n2 = randInt(1, d + d / 2 | 0);
+    if (sub && n1 <= n2) [n1, n2] = [n2, n1];
+    if (sub && n1 === n2) n1++;
+    const rn = sub ? n1 - n2 : n1 + n2;
+    const o = Math.random() < 0.5 ? null : pick(NAMES);
+    if (o && !sub) {
+      return makeFrac('fractions', `${o} ate ${n1}/${d} of a pizza at lunch and ${n2}/${d} of the same pizza at supper. How much pizza did ${o} eat in all?`, rn, d,
+        `The denominators match, so add the numerators: ${n1} + ${n2} = ${rn}. ${fracResultText(rn, d)}.`, { hint: 'Enter a fraction or mixed number.' });
+    }
+    return makeFrac('fractions', `${n1}/${d} ${sub ? '−' : '+'} ${n2}/${d} = ?`, rn, d,
+      `The denominators are the same, so ${sub ? 'subtract' : 'add'} the numerators: ${n1} ${sub ? '−' : '+'} ${n2} = ${rn}. ${fracResultText(rn, d)}.`, { hint: 'Enter a fraction or mixed number.' });
+  }
+  function wholeByUnit5() {
+    const w = randInt(2, 9), d = pick([2, 3, 4, 5, 6, 8, 10]);
+    if (Math.random() < 0.5) {
+      return makeFrac('fractions', `${w} × 1/${d} = ?`, w, d, `${w} groups of 1/${d} is ${w}/${d}${w > d ? ' = ' + mixedStr(w, d) : ''}.`, { hint: 'Enter a fraction or mixed number.' });
+    }
+    return makeNum('fractions', `${w} ÷ 1/${d} = ?`, w * d, `How many pieces of size 1/${d} fit in ${w} wholes? Each whole has ${d} pieces: ${w} × ${d} = ${w * d}.`, { hint: 'Enter a number.' });
+  }
+
+  // ---------- decimals ----------
+  function dec(x, dp) { return x.toFixed(dp); }
+  function decCompare(g) {
+    const dp = g === 4 ? 1 : 2, f = Math.pow(10, dp);
+    for (;;) {
+      const a = randInt(1, 99 * f) / f, b = Math.random() < 0.5 ? randInt(1, 99 * f) / f : Math.round((a + randInt(-9, 9) / f) * f) / f;
+      if (a === b || b <= 0) continue;
+      const greater = Math.random() < 0.5, ans = greater ? Math.max(a, b) : Math.min(a, b);
+      return makeNum('decimals', `Which number is ${greater ? 'greater' : 'less'}: ${dec(a, dp)} or ${dec(b, dp)}?`, ans,
+        `Compare the whole numbers first, then tenths${dp === 2 ? ', then hundredths' : ''}. The ${greater ? 'greater' : 'lesser'} number is ${dec(ans, dp)}.`, { tol: 1e-9, display: dec(ans, dp), hint: 'Enter the number.' });
+    }
+  }
+  function decOrder(g) {
+    const dp = g === 4 ? 1 : 2, f = Math.pow(10, dp), set = new Set();
+    while (set.size < 4) set.add(randInt(1, 30 * f));
+    const list = [...set].map(v => v / f), sorted = [...list].sort((a, b) => a - b);
+    return makeRatSeq('decimals', `Order from least to greatest: ${list.map(v => dec(v, dp)).join(', ')}`, sorted, sorted.map(v => dec(v, dp)).join(', '),
+      `Compare place by place. In order: ${sorted.map(v => dec(v, dp)).join(', ')}.`);
+  }
+  function decRound(g) {
+    if (g === 4) {
+      const xi = randInt(11, 989), x = xi / 10, ans = Math.floor((xi + 5) / 10);
+      return makeNum('decimals', `Round ${dec(x, 1)} to the nearest whole number.`, ans, `Look at the tenths digit: if it is 5 or more, round up. ${dec(x, 1)} rounds to ${ans}.`, { hint: 'Enter a whole number.' });
+    }
+    const xi = randInt(111, 9899), x = xi / 100, ans = Math.floor((xi + 5) / 10) / 10;
+    return makeNum('decimals', `Round ${dec(x, 2)} to the nearest tenth.`, ans, `Look at the hundredths digit: if it is 5 or more, round up. ${dec(x, 2)} rounds to ${dec(ans, 1)}.`, { tol: 1e-9, display: dec(ans, 1), hint: 'Enter a decimal number.' });
+  }
+  function fracDec(g) {
+    if (g === 4) {
+      const n = randInt(1, 9);
+      if (Math.random() < 0.5) return makeNum('decimals', `Write ${n}/10 as a decimal.`, n / 10, `${n}/10 means ${n} tenths, which is ${n / 10}.`, { tol: 1e-9, display: dec(n / 10, 1), hint: 'Enter a decimal number.' });
+      return makeNum('decimals', `${dec(n / 10, 1)} = ?/10`, n, `${dec(n / 10, 1)} is ${n} tenths, so it is ${n}/10.`, { hint: 'Enter the missing numerator.' });
+    }
+    const t = randInt(1, 3);
+    if (t === 1) { const n = randInt(1, 99); return makeNum('decimals', `Write ${n}/100 as a decimal.`, n / 100, `${n}/100 means ${n} hundredths, which is ${dec(n / 100, 2)}.`, { tol: 1e-9, display: dec(n / 100, 2), hint: 'Enter a decimal number.' }); }
+    if (t === 2) { const n = randInt(1, 99); return makeNum('decimals', `${dec(n / 100, 2)} = ?/100`, n, `${dec(n / 100, 2)} is ${n} hundredths, so it is ${n}/100.`, { hint: 'Enter the missing numerator.' }); }
+    const [n, d] = pick([[1, 2], [1, 4], [3, 4], [1, 5], [2, 5], [3, 5], [4, 5], [1, 10], [7, 10], [1, 20], [3, 20], [1, 25], [3, 25], [1, 50], [7, 50]]);
+    return makeNum('decimals', `Write ${n}/${d} as a decimal.`, n / d, `Make an equivalent fraction with denominator 100: ${n}/${d} = ${n * 100 / d}/100 = ${dec(n / d, 2)}.`, { tol: 1e-9, display: n2s(n / d), hint: 'Enter a decimal number.' });
+  }
+  function decMulTenth5() {
+    const w = randInt(2, 99) * (Math.random() < 0.5 ? 1 : 10), p = pick([0.1, 0.01]), ans = r6(w * p);
+    return makeNum('decimals', `${w} × ${p} = ?`, ans, `Multiplying by ${p} is the same as dividing by ${p === 0.1 ? 10 : 100}: the decimal point moves ${p === 0.1 ? 1 : 2} place${p === 0.1 ? '' : 's'} to the left. ${w} × ${p} = ${ans}.`, { tol: 1e-9, hint: 'Enter a number.' });
+  }
+
+  // ---------- percents (Grade 5) ----------
+  function pctEquiv5() {
+    const t = randInt(1, 4);
+    if (t === 1) { const p = randInt(1, 99); return makeNum('percentages', `Write ${p}% as a decimal.`, p / 100, `${p}% means ${p} out of 100, which is ${dec(p / 100, 2)}.`, { tol: 1e-9, display: n2s(p / 100), hint: 'Enter a decimal number.' }); }
+    if (t === 2) { const p = randInt(1, 99); return makeNum('percentages', `Write ${dec(p / 100, 2)} as a percent.`, p, `${dec(p / 100, 2)} is ${p} hundredths, which is ${p}%.`, { display: `${p}%`, hint: 'Enter the percent, like 35 for 35%.' }); }
+    if (t === 3) {
+      const [n, d] = pick([[1, 2], [1, 4], [3, 4], [1, 5], [2, 5], [3, 5], [4, 5], [1, 10], [3, 10], [7, 10], [9, 10], [1, 20], [3, 20], [1, 25], [7, 25], [1, 50], [9, 50]]);
+      return makeNum('percentages', `Write ${n}/${d} as a percent.`, n * 100 / d, `Make an equivalent fraction with denominator 100: ${n}/${d} = ${n * 100 / d}/100 = ${n * 100 / d}%.`, { tol: 1e-9, display: `${n * 100 / d}%`, hint: 'Enter the percent, like 35 for 35%.' });
+    }
+    const [p, n, d] = pick([[50, 1, 2], [25, 1, 4], [75, 3, 4], [20, 1, 5], [40, 2, 5], [60, 3, 5], [80, 4, 5], [10, 1, 10], [30, 3, 10], [70, 7, 10], [5, 1, 20], [35, 7, 20]]);
+    return makeFrac('percentages', `Write ${p}% as a fraction in lowest terms.`, n, d, `${p}% = ${p}/100. Divide the top and bottom by ${gcd(p, 100)}: ${n}/${d}.`, { requireLowest: true });
+  }
+
+  // ---------- ratios and rates ----------
+  const SCALE3 = [['bike', 'wheels', 2], ['pair', 'socks', 2], ['hand', 'fingers', 5], ['star', 'points', 5], ['dime', 'cents', 10], ['nickel', 'cents', 5]];
+  function scale3() {
+    const t = randInt(1, 2);
+    if (t === 1) {
+      const [one, part, k] = pick(SCALE3.filter(x => [2, 5, 10].includes(x[2]))), n = randInt(2, 9);
+      return makeNum('ratios', `1 ${one} has ${k} ${part}. How many ${part} do ${n} ${one}s have?`, k * n, `For every 1 there are ${k}: ${n} × ${k} = ${k * n}.`, { hint: 'Enter a number.' });
+    }
+    const k = pick([2, 5, 10]), n = randInt(2, 9);
+    return makeNum('ratios', `For every 1 box there are ${k} pens. Complete the table: 1 box → ${k} pens, ${n} boxes → ? pens.`, k * n, `${n} × ${k} = ${k * n}.`, { hint: 'Enter a number.' });
+  }
+  function rate4() {
+    const t = randInt(1, 2), nm = pick(NAMES);
+    if (t === 1) {
+      const a = randInt(2, 9), b = randInt(2, 9), c = randInt(2, 9);
+      return makeNum('ratios', `A pack has ${a} pencils. How many pencils are in ${b} packs?`, a * b, `${b} packs × ${a} pencils = ${a * b}.`, { hint: 'Enter a number.' });
+    }
+    const q = randInt(2, 6), cost = randInt(2, 9) * q, k = randInt(2, 4);
+    return makeNum('ratios', `${q} tickets cost $${cost}. How much do ${q * k} tickets cost, in dollars?`, cost * k, `${q * k} is ${k} times as many as ${q}, so the cost is ${k} × ${cost} = ${cost * k}.`, { units: units('dollar'), hint: 'Enter an amount in dollars.' });
+  }
+  function equivRatio5() {
+    const a = randInt(1, 6), b = randInt(2, 9), k = randInt(2, 9);
+    if (a === b) return equivRatio5();
+    const t = randInt(1, 3);
+    if (t === 1) return makeNum('ratios', `${a} : ${b} = ${a * k} : ?`, b * k, `The first number was multiplied by ${k}, so multiply the second number by ${k}: ${b} × ${k} = ${b * k}.`, { hint: 'Enter the missing number.' });
+    if (t === 2) return makeNum('ratios', `For every ${a} red ${a === 1 ? 'bead' : 'beads'} there ${b === 1 ? 'is' : 'are'} ${b} blue ${b === 1 ? 'bead' : 'beads'}. If there are ${a * k} red beads, how many blue beads are there?`, b * k, `${a * k} ÷ ${a} = ${k} groups. ${k} × ${b} = ${b * k}.`, { hint: 'Enter a number.' });
+    const km = randInt(2, 9) * 10, h = randInt(2, 6);
+    return makeNum('ratios', `A cyclist rides ${km} km every hour. How far does the cyclist ride in ${h} hours?`, km * h, `${km} km each hour for ${h} hours: ${km} × ${h} = ${km * h} km.`, { units: units('km'), hint: 'Enter a number of km.' });
+  }
+
+  // ---------- registry (Number) ----------
+  GENERATORS.numbersense[1] = [pCount1, pCount1, pCompare.bind(null, 1), pCompare.bind(null, 1), pOrder.bind(null, 1), pSkip.bind(null, 1), pSkip.bind(null, 1), pPlace.bind(null, 1), pMoreLess.bind(null, 1), pMoreLess.bind(null, 1)];
+  GENERATORS.numbersense[2] = [pCompare.bind(null, 2), pOrder.bind(null, 2), pSkip.bind(null, 2), pSkip.bind(null, 2), pPlace.bind(null, 2), pPlace.bind(null, 2), pMoreLess.bind(null, 2), pMoreLess.bind(null, 2), pEvenOdd.bind(null, 2), pEvenOdd.bind(null, 2)];
+  GENERATORS.numbersense[3] = [pCompare.bind(null, 3), pOrder.bind(null, 3), pSkip.bind(null, 3), pPlace.bind(null, 3), pPlace.bind(null, 3), pMoreLess.bind(null, 3), pRound.bind(null, 3), pRound.bind(null, 3), pEvenOdd.bind(null, 3)];
+  GENERATORS.numbersense[4] = [pCompare.bind(null, 4), pOrder.bind(null, 4), pPlace.bind(null, 4), pPlace.bind(null, 4), pMoreLess.bind(null, 4), pRound.bind(null, 4), pRound.bind(null, 4)];
+  GENERATORS.numbersense[5] = [pCompare.bind(null, 5), pOrder.bind(null, 5), pPlace.bind(null, 5), pPlace.bind(null, 5), pMoreLess.bind(null, 5)];
+  GENERATORS.addsub[1] = [pAddSub.bind(null, 1), pAddSub.bind(null, 1), pAddSub.bind(null, 1), pMissing.bind(null, 1), pStory.bind(null, 1), pStory.bind(null, 1), pRelated.bind(null, 1)];
+  GENERATORS.addsub[2] = [pAddSub.bind(null, 2), pAddSub.bind(null, 2), pAddSub.bind(null, 2), pMissing.bind(null, 2), pStory.bind(null, 2), pStory.bind(null, 2), pRelated.bind(null, 2)];
+  GENERATORS.addsub[3] = [pAddSub.bind(null, 3), pAddSub.bind(null, 3), pAddSub.bind(null, 3), pMissing.bind(null, 3), pStory.bind(null, 3), pStory.bind(null, 3), pEstimate.bind(null, 3)];
+  GENERATORS.addsub[4] = [pAddSub.bind(null, 4), pAddSub.bind(null, 4), pAddSub.bind(null, 4), pStory.bind(null, 4), pStory.bind(null, 4), pEstimate.bind(null, 4)];
+  GENERATORS.addsub[5] = [pAddSub.bind(null, 5), pAddSub.bind(null, 5), pAddSub.bind(null, 5), pStory.bind(null, 5), pStory.bind(null, 5)];
+  GENERATORS.multdiv[1] = [pGroups1];
+  GENERATORS.multdiv[2] = [pGroups2];
+  GENERATORS.multdiv[3] = [pFact.bind(null, 3), pFact.bind(null, 3), pArray.bind(null, 3), pArray.bind(null, 3), pMultStory.bind(null, 3), pMultStory.bind(null, 3), pFracGroups3];
+  GENERATORS.multdiv[4] = [pFact.bind(null, 4), pFact.bind(null, 4), pArray.bind(null, 4), pPow10.bind(null, 4), pMul1.bind(null, 4), pMul1.bind(null, 4), pDiv1, pDiv1, pMultStory.bind(null, 4)];
+  GENERATORS.multdiv[5] = [pFact.bind(null, 5), pFact.bind(null, 5), pMul2x2, pMul2x2, pDiv3by2, pDiv3by2, pMultStory.bind(null, 5)];
+  GENERATORS.fractions[1] = [fairShare.bind(null, 1), fairShare.bind(null, 1), halfFourth12.bind(null, 1), unitCompare1];
+  GENERATORS.fractions[2] = [fairShare.bind(null, 2), fairShare.bind(null, 2), fairShare.bind(null, 2), halfFourth12.bind(null, 2)];
+  GENERATORS.fractions[3] = [fairShare.bind(null, 3), fairShare.bind(null, 3), equiv3, equiv3, repeatedUnit3, repeatedUnit3];
+  GENERATORS.fractions[4] = [fracName4.bind(null, 4), fracName4.bind(null, 4), fracCompare.bind(null, 4), fracCompare.bind(null, 4), countByFracs4, unitMultiple4, unitMultiple4];
+  GENERATORS.fractions[5] = [mixedConvert5, mixedConvert5, equiv5, equiv5, fracCompare.bind(null, 5), order5, addSubLike5, addSubLike5, wholeByUnit5];
+  GENERATORS.decimals[4] = [decCompare.bind(null, 4), decOrder.bind(null, 4), decRound.bind(null, 4), decRound.bind(null, 4), fracDec.bind(null, 4), fracDec.bind(null, 4)];
+  GENERATORS.decimals[5] = [decCompare.bind(null, 5), decOrder.bind(null, 5), decRound.bind(null, 5), decRound.bind(null, 5), fracDec.bind(null, 5), fracDec.bind(null, 5), decMulTenth5, decMulTenth5];
+  GENERATORS.percentages[5] = [pctEquiv5];
+  GENERATORS.ratios[3] = [scale3];
+  GENERATORS.ratios[4] = [rate4];
+  GENERATORS.ratios[5] = [equivRatio5];
+
+  // =====================================================================
+  // GRADES 1-5 -- Algebra, Data and Probability (Ontario 2020)
+  //   C1 patterns, C2 equalities / equations / inequalities / expressions,
+  //   D1 data (tally, pictographs, bar graphs, line plots, stem-and-leaf,
+  //   mean/median/mode), D2 probability language and fractions
+  // =====================================================================
+
+  // ---------- patterns ----------
+  const SHAPE_NAMES = ['circle', 'square', 'triangle'];
+  const CORES = { 1: [[0, 1], [0, 0, 1], [0, 1, 1]], 2: [[0, 1], [0, 0, 1], [0, 1, 1], [0, 1, 2], [0, 0, 1, 1]], 3: [[0, 0, 1], [0, 1, 2], [0, 1, 1, 2]] };
+  function pPatternSeq(g) {
+    const core = pick(CORES[g] || CORES[3]), L = core.length, useColor = Math.random() < 0.6;
+    const names = useColor ? shuffle(PAT_COLORS.map(c => c[0])).slice(0, 3) : shuffle(SHAPE_NAMES).slice(0, 3);
+    const total = L * 2 + randInt(1, L), seq = Array.from({ length: total }, (_, i) => names[core[i % L]]), ans = names[core[total % L]];
+    const tokens = seq.map(n => useColor ? { color: n } : { shape: n });
+    return makeText('patterns', `What comes next in this pattern? Type the ${useColor ? 'colour' : 'shape'} name.`, [ans], ans,
+      `The pattern repeats the core "${core.map(i => names[i]).join(', ')}". After ${seq[seq.length - 1]} comes ${ans}.`, { visual: svgPatternSeq(tokens, { blank: true }), hint: `Type the ${useColor ? 'colour' : 'shape'}, like ${names[0]}.` });
+  }
+  function pPatternLetters(g) {
+    const cores = [['A', 'B'], ['A', 'A', 'B'], ['A', 'B', 'B'], ['A', 'B', 'C'], ['A', 'B', 'B', 'C']], core = pick(g <= 2 ? cores.slice(0, 4) : cores), L = core.length;
+    const total = L * 2 + randInt(0, L - 1), shown = Array.from({ length: total }, (_, i) => core[i % L]);
+    if (g <= 2) {
+      return makeText('patterns', `What letter comes next? ${shown.join(', ')}, __`, [core[total % L]], core[total % L],
+        `The pattern repeats ${core.join(', ')}. Next is ${core[total % L]}.`, { hint: 'Type a letter.' });
+    }
+    const N = randInt(total + 2, total + 14), ans = core[(N - 1) % L];
+    return makeText('patterns', `Here is a pattern: ${shown.join(', ')}, … What is the ${ordinal(N)} letter in the pattern?`, [ans], ans,
+      `The core ${core.join(', ')} has ${L} letters. ${N} ÷ ${L} leaves a remainder of ${N % L}${N % L === 0 ? ', so it is the last letter of the core' : ''}, so the ${ordinal(N)} letter is ${ans}.`, { hint: 'Type a letter.' });
+  }
+  function pNumPattern(g) {
+    const ups = { 1: [1, 2, 5, 10], 2: [2, 3, 4, 5, 10, 20, 25], 3: [2, 3, 4, 5, 6, 8, 10, 25, 50, 100], 4: [3, 4, 6, 7, 8, 9, 25, 50, 100], 5: [3, 4, 6, 7, 8, 9, 12, 25, 50, 100] }[g];
+    const max = g === 1 ? 50 : g === 2 ? 200 : 1000, down = g >= 3 && Math.random() < (g === 5 ? 0.45 : 0.25);
+    const decimals = g >= 4 && Math.random() < 0.3, dp = g === 5 && Math.random() < 0.5 ? 2 : 1, f = Math.pow(10, dp);
+    let step, start;
+    if (decimals) { step = pick(dp === 2 ? [0.25, 0.05, 0.15] : [0.2, 0.3, 0.5, 0.4]); start = down ? randInt(20, 60) / 10 + (dp === 2 ? 2 : 3) : randInt(1, 30) / 10; }
+    else { step = pick(ups); start = down ? step * 5 + randInt(0, Math.min(40, max - step * 5)) : randInt(0, Math.max(1, Math.floor(max / 4))); }
+    const dir = down ? -1 : 1, terms = Array.from({ length: 6 }, (_, i) => r6(start + dir * step * i));
+    if (terms.some(t => t < 0 || t > max + 0.001)) return pNumPattern(g);
+    const fmt = x => decimals ? x.toFixed(dp) : String(x);
+    const k = randInt(1, 5), shown = terms.slice(0, 5).map((t, i) => i === k ? '__' : fmt(t));
+    const ask = k === 5 ? terms[5] : terms[k];
+    if (k === 5) shown.push('__');
+    return makeNum('patterns', `Find the missing number in the pattern: ${shown.join(', ')}`, ask,
+      `The numbers ${down ? 'decrease' : 'increase'} by ${fmt(step)} each time, so the missing number is ${fmt(ask)}.`, { tol: 1e-9, display: fmt(ask), hint: 'Enter the missing number.' });
+  }
+  function pRule(g) {
+    const down = g >= 3 && Math.random() < 0.4, step = pick(g === 2 ? [2, 3, 4, 5, 10] : [3, 4, 6, 7, 8, 9, 12, 25]), start = down ? step * 5 + randInt(0, 20) : randInt(0, 30);
+    const terms = Array.from({ length: 5 }, (_, i) => start + (down ? -1 : 1) * step * i);
+    return makeNum('patterns', `In the pattern ${terms.join(', ')}, … what number is ${down ? 'subtracted' : 'added'} each time?`, step,
+      `${terms[1]} ${down ? '−' : '+'} ${step} = ${terms[2]}. The pattern rule is ${down ? 'subtract' : 'add'} ${step}.`, { hint: 'Enter a number.' });
+  }
+  function pTermN(g) {
+    const down = g === 5 && Math.random() < 0.4, d = pick([2, 3, 4, 5, 6, 7, 8, 9, 10]), a = down ? d * 14 + randInt(0, 20) : randInt(1, 12);
+    const val = n => a + (down ? -1 : 1) * d * (n - 1);
+    const rows = [1, 2, 3, 4].map(n => [String(n), String(val(n))]), vis = htmlTable(['Term number', 'Value'], rows);
+    const N = randInt(6, g === 3 ? 10 : 14);
+    if (g === 5 && Math.random() < 0.4) {
+      const t = randInt(7, 14);
+      return makeNum('patterns', `The table shows a ${down ? 'shrinking' : 'growing'} pattern. Which term number has the value ${val(t)}?`, t,
+        `The values ${down ? 'go down' : 'go up'} by ${d} each term. Term 1 is ${a}. (${down ? a : val(t)} − ${down ? val(t) : a}) ÷ ${d} = ${t - 1}, so the term number is ${t - 1} + 1 = ${t}.`, { visual: vis, hint: 'Enter the term number.' });
+    }
+    return makeNum('patterns', `The table shows a ${down ? 'shrinking' : 'growing'} pattern. What is the value of term ${N}?`, val(N),
+      `The values ${down ? 'go down' : 'go up'} by ${d} each term. Term 1 is ${a}, so term ${N} is ${a} ${down ? '−' : '+'} ${d} × ${N - 1} = ${val(N)}.`, { visual: vis, hint: 'Enter a number.' });
+  }
+
+  // ---------- equations and inequalities ----------
+  function eqEquivMissing(g) {
+    const M = g === 1 ? 20 : g === 2 ? 100 : 1000, t = g >= 3 ? randInt(1, 3) : g === 2 ? randInt(1, 2) : 1;
+    if (t === 1) {
+      const a = randInt(1, M / 2), b = randInt(1, M / 2), c = randInt(0, a + b);
+      return makeNum('equations', `${a} + ${b} = ? + ${c}`, a + b - c, `Both sides must be equal. ${a} + ${b} = ${a + b}, and ${a + b} = ${a + b - c} + ${c}.`, { hint: 'Enter the missing number.' });
+    }
+    if (t === 2) {
+      const a = randInt(2, M), b = randInt(1, a - 1), c = randInt(0, M - a + b);
+      return makeNum('equations', `${a} − ${b} = ? − ${c}`, a - b + c, `${a} − ${b} = ${a - b}. To get ${a - b} when you take away ${c}, start with ${a - b} + ${c} = ${a - b + c}.`, { hint: 'Enter the missing number.' });
+    }
+    const a = randInt(2, 10), b = randInt(2, 10), P = a * b, divs = [];
+    for (let k = 2; k <= 10; k++) if (P % k === 0 && k !== a) divs.push(k);
+    if (!divs.length) return eqEquivMissing(g);
+    const c = pick(divs);
+    return makeNum('equations', `${a} × ${b} = ? × ${c}`, P / c, `${a} × ${b} = ${P}. ${P} ÷ ${c} = ${P / c}, so ? = ${P / c}.`, { hint: 'Enter the missing number.' });
+  }
+  function eqEquivYN(g) {
+    const t = g >= 3 ? randInt(1, 3) : randInt(1, 2), yes = Math.random() < 0.5;
+    const adj = yes ? 0 : pick([-2, -1, 1, 2]);
+    if (t === 1) {
+      const T = randInt(5, g === 1 ? 20 : g === 2 ? 50 : 200), a = randInt(1, T - 1), c = randInt(1, T - 1), b = T - a, d = T - c + adj;
+      if (d < 0 || (a === c && yes)) return eqEquivYN(g);
+      return makeYesNo('equations', `Is ${a} + ${b} equal to ${c} + ${d}?`, yes, `${a} + ${b} = ${T} and ${c} + ${d} = ${c + d}. ${yes ? 'They are equal.' : 'They are not equal.'}`);
+    }
+    if (t === 2) {
+      const a = randInt(8, g === 1 ? 20 : 100), b = randInt(1, a - 1), diff = a - b, c = randInt(diff + 1, diff + 20), d = c - diff + adj;
+      if (d < 0 || d >= c && !yes) return eqEquivYN(g);
+      return makeYesNo('equations', `Is ${a} − ${b} equal to ${c} − ${d}?`, yes, `${a} − ${b} = ${diff} and ${c} − ${d} = ${c - d}. ${yes ? 'They are equal.' : 'They are not equal.'}`);
+    }
+    const a = randInt(2, 10), b = randInt(2, 10), P = a * b, divs = [];
+    for (let k = 2; k <= 12; k++) if (P % k === 0 && k !== a) divs.push(k);
+    if (!divs.length) return eqEquivYN(g);
+    const c = pick(divs), d = P / c + adj;
+    if (d < 1) return eqEquivYN(g);
+    return makeYesNo('equations', `Is ${a} × ${b} equal to ${c} × ${d}?`, yes, `${a} × ${b} = ${P} and ${c} × ${d} = ${c * d}. ${yes ? 'They are equal.' : 'They are not equal.'}`);
+  }
+  function eqSymbol(g) {
+    const sym = pick(['★', '□', '△']), t = g >= 3 ? randInt(1, 3) : randInt(1, 2), M = g === 2 ? 50 : 200;
+    if (t === 1) { const a = randInt(2, M - 5), x = randInt(1, M - a); return makeNum('equations', `${sym} + ${a} = ${a + x}. What number does ${sym} stand for?`, x, `${a + x} − ${a} = ${x}.`, { hint: 'Enter a number.' }); }
+    if (t === 2) { const x = randInt(5, M), a = randInt(1, x - 1); return makeNum('equations', `${sym} − ${a} = ${x - a}. What number does ${sym} stand for?`, x, `${x - a} + ${a} = ${x}.`, { hint: 'Enter a number.' }); }
+    const a = randInt(2, 10), x = randInt(2, 10); return makeNum('equations', `${a} × ${sym} = ${a * x}. What number does ${sym} stand for?`, x, `${a * x} ÷ ${a} = ${x}.`, { hint: 'Enter a number.' });
+  }
+  function eqSolve(g) {
+    const v = pick(['n', 'm', 'x', 'a', 'b']), max = g === 4 ? 50 : 100;
+    if (g === 5 && Math.random() < 0.5) {
+      const t = randInt(1, 3);
+      if (t === 1) { const a = randInt(2, 9), x = randInt(2, 12), b = randInt(1, 20); if (a * x + b > max) return eqSolve(g); return makeNum('equations', `Solve for ${v}: ${a} × ${v} + ${b} = ${a * x + b}`, x, `Subtract ${b}: ${a} × ${v} = ${a * x}. Divide by ${a}: ${v} = ${x}.`, { hint: `Enter the value of ${v}.` }); }
+      if (t === 2) { const a = randInt(2, 9), x = randInt(3, 12), b = randInt(1, a * x - 1); if (a * x > max) return eqSolve(g); return makeNum('equations', `Solve for ${v}: ${a} × ${v} − ${b} = ${a * x - b}`, x, `Add ${b}: ${a} × ${v} = ${a * x}. Divide by ${a}: ${v} = ${x}.`, { hint: `Enter the value of ${v}.` }); }
+      const a = randInt(2, 9), k = randInt(2, 12), b = randInt(1, 30); if (a * k > max) return eqSolve(g);
+      return makeNum('equations', `Solve for ${v}: ${v} ÷ ${a} + ${b} = ${k + b}`, a * k, `Subtract ${b}: ${v} ÷ ${a} = ${k}. Multiply by ${a}: ${v} = ${a * k}.`, { hint: `Enter the value of ${v}.` });
+    }
+    const t = randInt(1, 4);
+    if (t === 1) { const a = randInt(1, max - 2), x = randInt(1, max - a); return makeNum('equations', `Solve for ${v}: ${v} + ${a} = ${a + x}`, x, `Subtract ${a} from both sides: ${a + x} − ${a} = ${x}.`, { hint: `Enter the value of ${v}.` }); }
+    if (t === 2) { const x = randInt(3, max), a = randInt(1, x - 1); return makeNum('equations', `Solve for ${v}: ${v} − ${a} = ${x - a}`, x, `Add ${a} to both sides: ${x - a} + ${a} = ${x}.`, { hint: `Enter the value of ${v}.` }); }
+    if (t === 3) { const a = randInt(2, 9), x = randInt(2, Math.floor(max / a)); return makeNum('equations', `Solve for ${v}: ${a} × ${v} = ${a * x}`, x, `Divide both sides by ${a}: ${a * x} ÷ ${a} = ${x}.`, { hint: `Enter the value of ${v}.` }); }
+    const a = randInt(2, 9), k = randInt(2, Math.floor(max / a)); return makeNum('equations', `Solve for ${v}: ${v} ÷ ${a} = ${k}`, a * k, `Multiply both sides by ${a}: ${k} × ${a} = ${a * k}.`, { hint: `Enter the value of ${v}.` });
+  }
+  function ineqSolve(g) {
+    for (let i = 0; i < 300; i++) {
+      let expr, test;
+      if (g === 4) {
+        const a = randInt(1, 12), c = randInt(3, 20), t = randInt(1, 4);
+        if (t === 1) { expr = `n + ${a} < ${c}`; test = n => n + a < c; }
+        else if (t === 2) { expr = `n + ${a} ≤ ${c}`; test = n => n + a <= c; }
+        else if (t === 3) { expr = `n − ${a} > ${c}`; test = n => n - a > c; if (c + a + 1 > 40) continue; }
+        else { expr = `n − ${a} ≥ ${c}`; test = n => n - a >= c; if (c + a > 40) continue; }
+      } else {
+        const a = randInt(2, 9), c = randInt(4, 50), t = randInt(1, 4);
+        if (t === 1) { expr = `${a} × n < ${c}`; test = n => a * n < c; }
+        else if (t === 2) { expr = `${a} × n > ${c}`; test = n => a * n > c; }
+        else if (t === 3) { expr = `n ÷ ${a} < ${Math.min(c, 12)}`; const cc = Math.min(c, 12); test = n => n / a < cc; }
+        else { expr = `n + ${randInt(2, 20)} > ${c}`; const a2 = Number(expr.match(/n \+ (\d+)/)[1]); test = n => n + a2 > c; }
+      }
+      const greatest = /<|≤/.test(expr);
+      let ans = null;
+      for (let n = 0; n <= 300; n++) if (test(n)) { if (greatest) ans = n; else if (ans === null) ans = n; }
+      if (ans === null || ans > 150) continue;
+      return makeNum('equations', `What is the ${greatest ? 'greatest' : 'least'} whole number n that makes ${expr} true?`, ans,
+        `Solve like an equation, then test numbers: the ${greatest ? 'greatest' : 'least'} whole number that works is ${ans}.`, { hint: 'Enter a whole number.' });
+    }
+    return ineqSolve(g);
+  }
+
+  // ---------- expressions (Grade 5) ----------
+  function evalExpr5() {
+    const v = pick(['n', 'm', 'x', 'k']), t = randInt(1, 4), x = randInt(1, 9);
+    if (t === 1) { const a = randInt(2, 9), b = randInt(1, 20); return makeNum('expressions', `Evaluate ${a}${v} + ${b} when ${v} = ${x}.`, a * x + b, `Replace ${v} with ${x}: ${a} × ${x} + ${b} = ${a * x} + ${b} = ${a * x + b}.`, { hint: 'Enter a number.' }); }
+    if (t === 2) { const a = randInt(2, 9), b = randInt(1, a * x - 1); return makeNum('expressions', `Evaluate ${a}${v} − ${b} when ${v} = ${x}.`, a * x - b, `Replace ${v} with ${x}: ${a} × ${x} − ${b} = ${a * x} − ${b} = ${a * x - b}.`, { hint: 'Enter a number.' }); }
+    if (t === 3) { const a = randInt(2, 6), k = randInt(2, 10), b = randInt(1, 15); return makeNum('expressions', `Evaluate ${v} ÷ ${a} + ${b} when ${v} = ${a * k}.`, k + b, `Replace ${v} with ${a * k}: ${a * k} ÷ ${a} + ${b} = ${k} + ${b} = ${k + b}.`, { hint: 'Enter a number.' }); }
+    const a = randInt(2, 9), b = randInt(2, 9), y = randInt(1, 9); return makeNum('expressions', `Evaluate ${a}a + ${b}b when a = ${x} and b = ${y}.`, a * x + b * y, `Replace: ${a} × ${x} + ${b} × ${y} = ${a * x} + ${b * y} = ${a * x + b * y}.`, { hint: 'Enter a number.' });
+  }
+  function translate5() {
+    const k = randInt(2, 12), t = randInt(1, 5), v = 'n';
+    const forms = [
+      [`${k} more than a number n`, [`n+${k}`, `${k}+n`], `n + ${k}`],
+      [`${k} less than a number n`, [`n-${k}`], `n − ${k}`],
+      [`${k} times a number n`, [`${k}n`, `n${k}`], `${k}n`],
+      [`a number n divided by ${k}`, [`n÷${k}`, `n/${k}`], `n ÷ ${k}`],
+      [`the cost of n pencils that cost $${k} each`, [`${k}n`, `n${k}`], `${k}n`]
+    ];
+    const [words, accepted, disp] = forms[t - 1];
+    return makeText('expressions', `Write an algebraic expression for: ${words}.`, accepted, disp, `${words} is written as ${disp}.`, { keepSign: true, hint: 'Type it like n + 3 or 4n.' });
+  }
+
+  // ---------- data ----------
+  const SURVEYS = [
+    { title: 'Favourite pet', cats: ['Dog', 'Cat', 'Fish', 'Bird', 'Rabbit'] },
+    { title: 'Favourite colour', cats: ['Red', 'Blue', 'Green', 'Yellow', 'Purple'] },
+    { title: 'Favourite sport', cats: ['Soccer', 'Hockey', 'Swimming', 'Tennis', 'Baseball'] },
+    { title: 'Favourite lunch', cats: ['Pizza', 'Pasta', 'Tacos', 'Sandwich', 'Soup'] }
+  ];
+  function distinctCounts(n, lo, hi, mult) {
+    const set = new Set();
+    while (set.size < n) set.add(randInt(Math.ceil(lo / mult), Math.floor(hi / mult)) * mult);
+    return [...set];
+  }
+  function readQuestions(survey, counts, visual, mult) {
+    const idx = counts.map((_, i) => i), t = randInt(1, 4), i = pick(idx);
+    const cats = survey.cats.slice(0, counts.length);
+    if (t === 1) return makeNum('data', `The graph shows the results of a survey: ${survey.title.toLowerCase()}. How many students chose ${cats[i]}?`, counts[i], `Read the value for ${cats[i]}: ${counts[i]}.`, { visual, hint: 'Enter a number.' });
+    if (t === 2) { const best = counts.indexOf(Math.max(...counts)); return makeText('data', `The graph shows the results of a survey: ${survey.title.toLowerCase()}. Which choice was picked the most?`, [cats[best].toLowerCase()], cats[best], `${cats[best]} has the greatest value (${counts[best]}).`, { visual, hint: 'Type the name.' }); }
+    if (t === 3) { const worst = counts.indexOf(Math.min(...counts)); return makeText('data', `The graph shows the results of a survey: ${survey.title.toLowerCase()}. Which choice was picked the least?`, [cats[worst].toLowerCase()], cats[worst], `${cats[worst]} has the least value (${counts[worst]}).`, { visual, hint: 'Type the name.' }); }
+    let j = pick(idx); while (j === i) j = pick(idx);
+    const hi = counts[i] > counts[j] ? i : j, lo = hi === i ? j : i;
+    return makeNum('data', `The graph shows the results of a survey: ${survey.title.toLowerCase()}. How many more students chose ${cats[hi]} than ${cats[lo]}?`, counts[hi] - counts[lo], `${counts[hi]} − ${counts[lo]} = ${counts[hi] - counts[lo]}.`, { visual, hint: 'Enter a number.' });
+  }
+  function tallyRead1() {
+    const s = pick(SURVEYS), counts = distinctCounts(3, 1, 13, 1), cats = s.cats.slice(0, 3);
+    return readQuestions(s, counts, svgTally(cats.map((c, i) => ({ label: c, count: counts[i] })), { title: s.title }));
+  }
+  function pictoRead(g) {
+    const s = pick(SURVEYS), each = g === 1 || g === 2 ? 1 : pick([2, 5, 10]), n = randInt(3, 4);
+    const counts = distinctCounts(n, each, each * 8, each), cats = s.cats.slice(0, n);
+    return readQuestions(s, counts, svgPictograph(cats.map((c, i) => ({ label: c, count: counts[i] })), each, { title: s.title }));
+  }
+  function barRead(g) {
+    const s = pick(SURVEYS), step = g === 2 ? pick([1, 2]) : pick([2, 5, 10]), n = randInt(3, 5);
+    const counts = distinctCounts(n, step, step * 8, step), cats = s.cats.slice(0, n);
+    return readQuestions(s, counts, svgBar(cats, counts, { step, title: s.title, yTitle: 'Number of students' }));
+  }
+  function linePlot2() {
+    const base = randInt(3, 8), len = randInt(8, 12), vals = [];
+    const mode = base + randInt(1, 3);
+    for (let i = 0; i < len; i++) vals.push(Math.random() < 0.4 ? mode : base + randInt(0, 5));
+    const c = {}; vals.forEach(v => { c[v] = (c[v] || 0) + 1; });
+    const max = Math.max(...Object.values(c)), modes = Object.keys(c).filter(k => c[k] === max);
+    if (modes.length !== 1) return linePlot2();
+    const vis = svgLinePlot(vals, { min: base, max: base + 5, title: 'Number of books read' });
+    if (Math.random() < 0.5) return makeNum('data', 'The line plot shows how many books each student read. What is the mode (the number that appears most often)?', Number(modes[0]), `The number ${modes[0]} has the most ×'s (${max}), so the mode is ${modes[0]}.`, { visual: vis, hint: 'Enter a number.' });
+    const v = base + randInt(0, 5);
+    return makeNum('data', `The line plot shows how many books each student read. How many students read ${v} books?`, c[v] || 0, `Count the ×'s above ${v}: ${c[v] || 0}.`, { visual: vis, hint: 'Enter a number.' });
+  }
+  function pStat(g, kind) {
+    kind = kind || pick(g === 3 ? ['mean', 'mode'] : ['mean', 'median', 'mode']);
+    const dec = g === 5 && Math.random() < 0.5;
+    for (let i = 0; i < 300; i++) {
+      const n = kind === 'median' && g === 4 ? pick([5, 7]) : randInt(5, 7);
+      let vals;
+      if (kind === 'mean') {
+        const m = dec ? randInt(20, 90) / 10 : randInt(3, 20);
+        const f = dec ? 10 : 1;
+        vals = Array.from({ length: n - 1 }, () => randInt(Math.max(1, Math.round(m * f) - 8 * f / (dec ? 2 : 1)), Math.round(m * f) + 8 * f / (dec ? 2 : 1)));
+        const last = Math.round(m * f) * n - vals.reduce((s, x) => s + x, 0);
+        if (last < 1 || last > (dec ? 150 : 40)) continue;
+        vals.push(last); vals = vals.map(x => x / f);
+      } else if (kind === 'median') {
+        vals = Array.from({ length: n }, () => dec ? randInt(10, 99) / 10 : randInt(2, 30));
+      } else {
+        vals = Array.from({ length: n + 1 }, () => randInt(2, 15));
+        const mm = {}; vals.forEach(v => { mm[v] = (mm[v] || 0) + 1; });
+        const mx = Math.max(...Object.values(mm));
+        if (mx < 2 || Object.values(mm).filter(c => c === mx).length !== 1) continue;
+      }
+      vals = shuffle(vals);
+      const list = vals.map(n2s).join(', '), sorted = [...vals].sort((a, b) => a - b);
+      if (kind === 'mean') {
+        const sum = r6(vals.reduce((s, x) => s + x, 0));
+        return makeNum('data', `Find the mean of this data set: ${list}`, r6(sum / n), `Add all the values: ${n2s(sum)}. Divide by how many values there are: ${n2s(sum)} ÷ ${n} = ${n2s(r6(sum / n))}.`, { tol: 1e-9, hint: dec ? 'Enter a number (decimals are OK).' : 'Enter a number.' });
+      }
+      if (kind === 'median') {
+        const med = n % 2 ? sorted[(n - 1) / 2] : r6((sorted[n / 2 - 1] + sorted[n / 2]) / 2);
+        if (n % 2 === 0 && Math.round(med * 1000) / 1000 !== med) continue;
+        return makeNum('data', `Find the median of this data set: ${list}`, med, `Put the values in order: ${sorted.map(n2s).join(', ')}. ${n % 2 ? 'The middle value is' : 'The mean of the two middle values is'} ${n2s(med)}.`, { tol: 1e-9, hint: dec ? 'Enter a number (decimals are OK).' : 'Enter a number.' });
+      }
+      const mm = {}; vals.forEach(v => { mm[v] = (mm[v] || 0) + 1; });
+      const mode = Number(Object.keys(mm).find(k => mm[k] === Math.max(...Object.values(mm))));
+      return makeNum('data', `Find the mode of this data set: ${list}`, mode, `The mode is the value that appears most often. ${mode} appears ${mm[mode]} times.`, { hint: 'Enter a number.' });
+    }
+    return pStat(g, kind);
+  }
+  function stemLeaf4() {
+    const n = pick([9, 11, 13]), vals = [];
+    while (vals.length < n) vals.push(randInt(11, 59));
+    vals.sort((a, b) => a - b);
+    const stems = [1, 2, 3, 4, 5].filter(s => vals.some(v => Math.floor(v / 10) === s)).map(s => ({ stem: s, leaves: vals.filter(v => Math.floor(v / 10) === s).map(v => v % 10) }));
+    const vis = stemLeafTable(stems), head = 'The stem-and-leaf plot shows some quiz marks (3 | 4 means 34).';
+    const t = randInt(1, 4), c = {}; vals.forEach(v => { c[v] = (c[v] || 0) + 1; });
+    const mx = Math.max(...Object.values(c)), modes = Object.keys(c).filter(k => c[k] === mx);
+    if (t === 1) return makeNum('data', `${head} What is the greatest mark?`, vals[n - 1], `The last leaf on the last stem gives the greatest value: ${vals[n - 1]}.`, { visual: vis, hint: 'Enter a number.' });
+    if (t === 2) return makeNum('data', `${head} How many marks are in the plot?`, n, `Count all the leaves: ${n}.`, { visual: vis, hint: 'Enter a number.' });
+    if (t === 3 && modes.length === 1 && mx > 1) return makeNum('data', `${head} What is the mode?`, Number(modes[0]), `The mark that appears most often is ${modes[0]}.`, { visual: vis, hint: 'Enter a number.' });
+    return makeNum('data', `${head} What is the median mark?`, vals[(n - 1) / 2], `The middle value (number ${(n + 1) / 2} of ${n}) is ${vals[(n - 1) / 2]}.`, { visual: vis, hint: 'Enter a number.' });
+  }
+  const QUAL_QUANT = [['favourite colour', 'qualitative'], ['number of siblings', 'quantitative'], ['eye colour', 'qualitative'], ['height in cm', 'quantitative'],
+    ['type of pet', 'qualitative'], ['number of goals scored', 'quantitative'], ['favourite sport', 'qualitative'], ['time to run 100 m', 'quantitative']];
+  function qualQuant4() {
+    const [what, ans] = pick(QUAL_QUANT);
+    return makeText('data', `Is "${what}" qualitative data (words or categories) or quantitative data (numbers)?`, [ans], ans,
+      ans === 'qualitative' ? `${what} describes a quality or category, so it is qualitative data.` : `${what} is measured or counted with numbers, so it is quantitative data.`, { hint: 'Type qualitative or quantitative.' });
+  }
+  function multiBar(g) {
+    const s = pick(SURVEYS), n = randInt(3, 4), cats = s.cats.slice(0, n), names = pick([['Girls', 'Boys'], ['Grade 4', 'Grade 5']]);
+    const stacked = g === 5 && Math.random() < 0.5, step = pick([1, 2, 5]);
+    const a = cats.map(() => randInt(2, 7) * step), b = cats.map(() => randInt(2, 7) * step);
+    const vis = svgBar2(cats, a, b, names, { stacked, step: stacked ? step * 2 : step, title: s.title, yTitle: 'Number of students' });
+    const i = randInt(0, n - 1);
+    if (stacked) {
+      if (Math.random() < 0.6) return makeNum('data', `The stacked-bar graph shows the results of a survey: ${s.title.toLowerCase()}. How many students in total chose ${cats[i]}?`, a[i] + b[i], `Add the two parts of the bar: ${a[i]} + ${b[i]} = ${a[i] + b[i]}.`, { visual: vis, hint: 'Enter a number.' });
+      return makeNum('data', `The stacked-bar graph shows the results of a survey: ${s.title.toLowerCase()}. How many ${names[1]} chose ${cats[i]}? (Read the height of that part of the bar.)`, b[i], `The ${names[1]} part of the ${cats[i]} bar is ${b[i]} tall.`, { visual: vis, hint: 'Enter a number.' });
+    }
+    if (Math.random() < 0.5 && a[i] !== b[i]) {
+      const hiS = a[i] > b[i] ? 0 : 1;
+      return makeNum('data', `The multiple-bar graph shows the results of a survey: ${s.title.toLowerCase()}. How many more ${names[hiS]} than ${names[1 - hiS]} chose ${cats[i]}?`, Math.abs(a[i] - b[i]), `${Math.max(a[i], b[i])} − ${Math.min(a[i], b[i])} = ${Math.abs(a[i] - b[i])}.`, { visual: vis, hint: 'Enter a number.' });
+    }
+    const si = randInt(0, 1);
+    return makeNum('data', `The multiple-bar graph shows the results of a survey: ${s.title.toLowerCase()}. How many ${names[si]} chose ${cats[i]}?`, (si ? b : a)[i], `Read the ${names[si]} bar for ${cats[i]}: ${(si ? b : a)[i]}.`, { visual: vis, hint: 'Enter a number.' });
+  }
+  function relFreq5() {
+    const T = pick([20, 25, 40, 50, 100]), n = randInt(1, T - 1), cat = pick(['soccer', 'swimming', 'hockey', 'pizza', 'tacos']);
+    const r = reduceFrac(n, T), pct = n / T * 100;
+    return makeRat('data', `In a survey of ${T} students, ${n} chose ${cat}. What is the relative frequency of ${cat}? (Give a fraction, a decimal, or a percent.)`, n / T,
+      `Relative frequency = ${n} ÷ ${T} = ${fracStr(r.n, r.d)} = ${n2s(n / T)} = ${n2s(pct)}%.`, { display: `${fracStr(r.n, r.d)} (${n2s(pct)}%)`, tol: 1e-9, tolPct: 1e-7 });
+  }
+  const MIS5 = [
+    ['A bar graph shows sales of 98 and 100 units, but the vertical axis starts at 96 instead of 0.', true, 'The axis does not start at 0, so a tiny difference looks huge.'],
+    ['A bar graph has a title, labelled axes, and a scale that starts at 0 and goes up by equal steps.', false, 'It has a title, labels and an even scale, so it is not misleading.'],
+    ['A pictograph shows twice as many cars using a car picture that is twice as tall and twice as wide.', true, 'The picture has 4 times the area, which makes the difference look bigger than it is.'],
+    ['A bar graph uses the same width for every bar and a vertical scale that starts at 0.', false, 'Equal bar widths and a scale that starts at 0 give a fair picture.'],
+    ['A graph only shows the two warmest months of the year to argue that a town is always hot.', true, 'Leaving out data hides the full picture, so it is misleading.'],
+    ['A line graph stretches the vertical scale so a rise of 1 degree looks like a huge jump.', true, 'A stretched scale exaggerates small changes.']
+  ];
+  function misleading5() {
+    const [txt, yes, why] = pick(MIS5);
+    return makeYesNo('data', `${txt} Could this graph be misleading?`, yes, why);
+  }
+  const GRAPH_CHOICES = [
+    ['comparing how many girls and how many boys chose each favourite sport', 'multiple-bar graph', ['multiple-bar graph', 'multiple bar graph', 'double-bar graph', 'double bar graph'], 4],
+    ['showing how the students in each grade are made up of boys and girls', 'stacked-bar graph', ['stacked-bar graph', 'stacked bar graph'], 5],
+    ['showing how the temperature changed every hour during one day', 'broken-line graph', ['broken-line graph', 'line graph', 'broken line graph'], 4],
+    ['comparing the number of students who chose each of five fruits', 'bar graph', ['bar graph', 'bar chart'], 4]
+  ];
+  function chooseGraph45(g) {
+    const [what, ans, acc] = pick(GRAPH_CHOICES.filter(c => c[3] <= g));
+    const opts = g === 4 ? 'bar graph, multiple-bar graph, broken-line graph' : 'bar graph, multiple-bar graph, stacked-bar graph, broken-line graph';
+    return makeText('data', `Which type of graph is best for ${what}? Choose from: ${opts}.`, acc, ans, `The best choice is a ${ans}.`, { hint: 'Type the name of the graph.' });
+  }
+
+  // ---------- probability ----------
+  const LIKELY = [
+    ['The sun will rise tomorrow.', 'certain'], ['A dog will drive a bus today.', 'impossible'], ['It will snow in Ontario next winter.', 'possible'], ['A ball you drop will fall to the ground.', 'certain'],
+    ['You will roll a 3 with a six-sided die.', 'possible'], ['You will roll a 9 with a six-sided die.', 'impossible'], ['A coin will land on heads when you flip it.', 'possible'],
+    ['Tomorrow will come after today.', 'certain'], ['A cat will fly to the moon today.', 'impossible'], ['You will roll a number less than 7 with a six-sided die.', 'certain'],
+    ['It will rain tomorrow.', 'possible'], ['You will be one year older next year.', 'certain']
+  ];
+  function probWords12(g) {
+    if (Math.random() < 0.5) {
+      const [txt, ans] = pick(LIKELY);
+      return makeText('probability', `Is it impossible, possible or certain? ${txt}`, [ans], ans, `${ans === 'certain' ? 'This will always happen' : ans === 'impossible' ? 'This can never happen' : 'This might happen, but it might not'}, so it is ${ans}.`, { hint: 'Type impossible, possible or certain.' });
+    }
+    const c1 = pick(['red', 'blue', 'green']), c2 = pick(['yellow', 'purple']), n = randInt(2, 8), t = randInt(1, 3);
+    if (t === 1) return makeText('probability', `A bag has ${n} ${c1} marbles and nothing else. You pick one marble without looking. Picking a ${c1} marble is: impossible, possible or certain?`, ['certain'], 'certain', 'Every marble is the same colour, so it is certain.', { hint: 'Type impossible, possible or certain.' });
+    if (t === 2) return makeText('probability', `A bag has ${n} ${c1} marbles and nothing else. You pick one marble without looking. Picking a ${c2} marble is: impossible, possible or certain?`, ['impossible'], 'impossible', `There are no ${c2} marbles, so it is impossible.`, { hint: 'Type impossible, possible or certain.' });
+    const m = randInt(1, 6);
+    return makeText('probability', `A bag has ${n} ${c1} marbles and ${m} ${c2} marbles. You pick one marble without looking. Picking a ${c1} marble is: impossible, possible or certain?`, ['possible'], 'possible', `There are both colours in the bag, so picking ${c1} is possible but not certain.`, { hint: 'Type impossible, possible or certain.' });
+  }
+  function likelihoodWord(n, total) {
+    if (n === 0) return 'impossible';
+    if (n === total) return 'certain';
+    if (2 * n === total) return 'equally likely';
+    return 2 * n > total ? 'likely' : 'unlikely';
+  }
+  function probWords34() {
+    const c1 = pick(['red', 'blue', 'green']), c2 = pick(['yellow', 'purple']), total = randInt(2, 10);
+    let r = randInt(0, total);
+    if (Math.random() < 0.5 && total % 2 === 0) r = total / 2;
+    const ans = likelihoodWord(r, total);
+    return makeText('probability', `A bag has ${r} ${c1} ${r === 1 ? 'marble' : 'marbles'} and ${total - r} ${c2} ${total - r === 1 ? 'marble' : 'marbles'}. You pick one marble without looking. Picking a ${c1} marble is: impossible, unlikely, equally likely, likely or certain?`, [ans], ans,
+      `${r} of the ${total} marbles are ${c1}. ${ans === 'equally likely' ? 'Exactly half are, so it is equally likely.' : ans === 'certain' ? 'All of them are, so it is certain.' : ans === 'impossible' ? 'None of them are, so it is impossible.' : ans === 'likely' ? 'More than half are, so it is likely.' : 'Fewer than half are, so it is unlikely.'}`,
+      { hint: 'Type: impossible, unlikely, equally likely, likely or certain.' });
+  }
+  function probLine4() {
+    const d = pick([2, 4, 8, 10]), n = randInt(0, d), r = reduceFrac(n, d), ans = likelihoodWord(n, d);
+    return makeText('probability', `On a probability line, an event has a probability of ${fracStr(r.n, r.d)}. Is the event impossible, unlikely, equally likely, likely or certain?`, [ans], ans,
+      `0 means impossible, 1/2 means equally likely and 1 means certain. ${fracStr(r.n, r.d)} is ${n * 2 === d ? 'exactly 1/2' : n * 2 > d ? 'greater than 1/2' : 'less than 1/2'}${n === 0 || n === d ? '' : ' but not 0 or 1'}, so it is ${ans}.`, { hint: 'Type: impossible, unlikely, equally likely, likely or certain.' });
+  }
+  function dRatP(q, n, d, sol) {
+    const v = n / d, tol = Math.min(0.005, v * 0.1);
+    return makeRat('probability', q, v, sol.replace(/(\d+\/\d+) = \1 \(/g, '$1 ('), { display: probDisplay(n, d), tol, tolPct: tol * 100 });
+  }
+  function probFrac5() {
+    const cs = shuffle(['red', 'blue', 'green', 'yellow']).slice(0, randInt(2, 3)), counts = cs.map(() => randInt(1, 6)), T = counts.reduce((s, x) => s + x, 0), i = randInt(0, cs.length - 1);
+    return dRatP(`A bag has ${cs.map((c, k) => `${counts[k]} ${c}`).join(', ')} marbles. One marble is picked without looking. What is the probability of picking a ${cs[i]} marble? (Give a fraction, decimal, or percent.)`, counts[i], T,
+      `Probability = favourable outcomes ÷ total outcomes = ${counts[i]}/${T} = ${probDisplay(counts[i], T)}.`);
+  }
+  function probExp5() {
+    const t = randInt(1, 3);
+    if (t === 1) { const n = pick([20, 25, 40, 50]), k = randInt(1, n - 1); return dRatP(`A spinner was spun ${n} times and landed on red ${k} times. What is the experimental probability of landing on red? (Give a fraction, decimal, or percent.)`, k, n, `Experimental probability = ${k} ÷ ${n} = ${probDisplay(k, n)}.`); }
+    if (t === 2) { const s = pick([4, 5, 6, 8, 10]), k = randInt(1, s - 1); return dRatP(`A fair spinner has ${s} equal sections and ${k} of them are blue. What is the theoretical probability of landing on blue? (Give a fraction, decimal, or percent.)`, k, s, `${k} of the ${s} equal sections are blue: ${probDisplay(k, s)}.`); }
+    const s = pick([2, 4, 5, 10]), n = s * randInt(3, 12);
+    return makeNum('probability', `The probability of landing on red on a spinner is 1/${s}. About how many times would you expect red in ${n} spins?`, n / s, `Expected number = ${n} × 1/${s} = ${n / s}.`, { hint: 'Enter a number.' });
+  }
+
+  // ---------- registry (Algebra, Data, Probability) ----------
+  GENERATORS.patterns[1] = [pPatternSeq.bind(null, 1), pPatternSeq.bind(null, 1), pPatternLetters.bind(null, 1), pNumPattern.bind(null, 1), pNumPattern.bind(null, 1)];
+  GENERATORS.patterns[2] = [pPatternSeq.bind(null, 2), pPatternLetters.bind(null, 2), pNumPattern.bind(null, 2), pNumPattern.bind(null, 2), pRule.bind(null, 2)];
+  GENERATORS.patterns[3] = [pPatternLetters.bind(null, 3), pPatternLetters.bind(null, 3), pNumPattern.bind(null, 3), pNumPattern.bind(null, 3), pRule.bind(null, 3), pTermN.bind(null, 3)];
+  GENERATORS.patterns[4] = [pNumPattern.bind(null, 4), pNumPattern.bind(null, 4), pRule.bind(null, 4), pTermN.bind(null, 4), pTermN.bind(null, 4), pPatternLetters.bind(null, 3)];
+  GENERATORS.patterns[5] = [pNumPattern.bind(null, 5), pNumPattern.bind(null, 5), pRule.bind(null, 5), pTermN.bind(null, 5), pTermN.bind(null, 5)];
+  GENERATORS.equations[1] = [eqEquivMissing.bind(null, 1), eqEquivMissing.bind(null, 1), eqEquivYN.bind(null, 1), eqEquivYN.bind(null, 1)];
+  GENERATORS.equations[2] = [eqEquivMissing.bind(null, 2), eqEquivYN.bind(null, 2), eqSymbol.bind(null, 2), eqSymbol.bind(null, 2)];
+  GENERATORS.equations[3] = [eqEquivMissing.bind(null, 3), eqEquivYN.bind(null, 3), eqSymbol.bind(null, 3), eqSymbol.bind(null, 3)];
+  GENERATORS.equations[4] = [eqSolve.bind(null, 4), eqSolve.bind(null, 4), eqSolve.bind(null, 4), ineqSolve.bind(null, 4), ineqSolve.bind(null, 4)];
+  GENERATORS.equations[5] = [eqSolve.bind(null, 5), eqSolve.bind(null, 5), eqSolve.bind(null, 5), ineqSolve.bind(null, 5), ineqSolve.bind(null, 5)];
+  GENERATORS.expressions[5] = [evalExpr5, evalExpr5, translate5, translate5];
+  GENERATORS.data[1] = [tallyRead1, tallyRead1, pictoRead.bind(null, 1), pictoRead.bind(null, 1)];
+  GENERATORS.data[2] = [barRead.bind(null, 2), barRead.bind(null, 2), linePlot2, linePlot2, pictoRead.bind(null, 2)];
+  GENERATORS.data[3] = [pictoRead.bind(null, 3), barRead.bind(null, 3), barRead.bind(null, 3), pStat.bind(null, 3), pStat.bind(null, 3)];
+  GENERATORS.data[4] = [pStat.bind(null, 4), pStat.bind(null, 4), stemLeaf4, stemLeaf4, qualQuant4, multiBar.bind(null, 4), multiBar.bind(null, 4), chooseGraph45.bind(null, 4)];
+  GENERATORS.data[5] = [pStat.bind(null, 5), pStat.bind(null, 5), relFreq5, multiBar.bind(null, 5), multiBar.bind(null, 5), misleading5, chooseGraph45.bind(null, 5)];
+  GENERATORS.probability[1] = [probWords12.bind(null, 1)];
+  GENERATORS.probability[2] = [probWords12.bind(null, 2)];
+  GENERATORS.probability[3] = [probWords34, probWords34];
+  GENERATORS.probability[4] = [probWords34, probLine4];
+  GENERATORS.probability[5] = [probFrac5, probFrac5, probExp5, probExp5];
+
+  // =====================================================================
+  // GRADES 1-5 -- Spatial Sense and Financial Literacy (Ontario 2020)
+  //   E1 geometry, location and movement; E2 measurement (length, mass,
+  //   capacity, time, angles, area); F1 money
+  // =====================================================================
+
+  // ---------- geometry ----------
+  const SIDES = { triangle: 3, square: 4, rectangle: 4, pentagon: 5, hexagon: 6, octagon: 8 };
+  function shapeSides(g) {
+    const name = pick(g === 1 ? ['triangle', 'square', 'rectangle', 'hexagon', 'pentagon'] : Object.keys(SIDES)), corners = g >= 2 && Math.random() < 0.4;
+    return makeNum('geometry', `How many ${corners ? 'corners (angles)' : 'sides'} does this shape have?`, SIDES[name],
+      `Count carefully: this shape is ${article(name)} ${name}. It has ${SIDES[name]} sides and ${SIDES[name]} corners.`, { visual: svgShape(name), hint: 'Enter a number.' });
+  }
+  function shapeName(g) {
+    const names = g === 1 ? ['triangle', 'square', 'rectangle', 'circle', 'hexagon'] : ['triangle', 'square', 'rectangle', 'circle', 'hexagon', 'pentagon', 'octagon'], ans = pick(names);
+    return makeText('geometry', `What is the name of this shape? Choose from: ${names.join(', ')}.`, [ans], ans,
+      `This shape is ${article(ans)} ${ans}${ans === 'circle' ? ', which has no straight sides' : ` with ${SIDES[ans]} sides`}.`, { visual: svgShape(ans), hint: 'Type the name of the shape.' });
+  }
+  const OBJECT_SOLIDS = [['a ball', 'sphere'], ['a basketball', 'sphere'], ['a tissue box', 'rectangular prism'], ['a shoe box', 'rectangular prism'], ['a can of soup', 'cylinder'],
+    ['a die (from a board game)', 'cube'], ['a party hat', 'cone'], ['an ice cream cone', 'cone'], ['a roll of paper towel', 'cylinder']];
+  function solidFromObject() {
+    const [obj, ans] = pick(OBJECT_SOLIDS);
+    return makeText('geometry', `Which 3-D object is shaped like ${obj}? Choose from: cube, cone, cylinder, sphere, rectangular prism.`, [ans], ans, `${obj.charAt(0).toUpperCase() + obj.slice(1)} has the shape of ${article(ans)} ${ans}.`, { hint: 'Type the name of the object.' });
+  }
+  const DESCRIBE = [
+    ['triangle', 'I have 3 sides and 3 corners.'], ['square', 'I have 4 equal sides and 4 square corners (right angles).'],
+    ['rectangle', 'I have 4 sides and 4 square corners. My opposite sides are equal, but my sides are not all equal.'], ['pentagon', 'I have 5 sides and 5 corners.'],
+    ['hexagon', 'I have 6 sides and 6 corners.'], ['octagon', 'I have 8 sides and 8 corners, like a stop sign.']
+  ];
+  function shapeDescribe() {
+    const [ans, txt] = pick(DESCRIBE);
+    return makeText('geometry', `${txt} What shape am I? Choose from: triangle, square, rectangle, pentagon, hexagon, octagon.`, [ans], ans, `A shape with that description is ${article(ans)} ${ans}.`, { hint: 'Type the name of the shape.' });
+  }
+  const SYMMETRY = [['square', 4], ['rectangle (that is not a square)', 2], ['equilateral triangle', 3], ['regular pentagon', 5], ['regular hexagon', 6]];
+  function shapeSymmetry() {
+    const [name, n] = pick(SYMMETRY);
+    return makeNum('geometry', `How many lines of symmetry does a ${name} have?`, n, `Lines of symmetry fold the shape into two matching halves. A ${name} has ${n}.`, { hint: 'Enter a number.' });
+  }
+  const SOLIDS3 = { 'cube': [6, 12, 8], 'rectangular prism': [6, 12, 8], 'triangular prism': [5, 9, 6], 'square pyramid': [5, 8, 5], 'triangular pyramid': [4, 6, 4], 'pentagonal pyramid': [6, 10, 6], 'pentagonal prism': [7, 15, 10] };
+  function solidCount3() {
+    const name = pick(Object.keys(SOLIDS3)), k = randInt(0, 2), what = ['faces', 'edges', 'vertices'][k];
+    return makeNum('geometry', `How many ${what} does ${article(name)} ${name} have?`, SOLIDS3[name][k],
+      `${article(name) === 'an' ? 'An' : 'A'} ${name} has ${SOLIDS3[name][0]} faces, ${SOLIDS3[name][1]} edges and ${SOLIDS3[name][2]} vertices.`, { hint: 'Enter a number.' });
+  }
+  const SOLID_DESC = [
+    ['6 square faces', 'cube'], ['2 triangular faces and 3 rectangular faces', 'triangular prism'], ['1 square face and 4 triangular faces', 'square pyramid'],
+    ['4 triangular faces and no other faces', 'triangular pyramid'], ['2 pentagon faces and 5 rectangular faces', 'pentagonal prism'], ['6 rectangular faces (not all the same size)', 'rectangular prism']
+  ];
+  function solidFromFaces() {
+    const [d, ans] = pick(SOLID_DESC);
+    return makeText('geometry', `Which solid has ${d}? Choose from: cube, rectangular prism, triangular prism, square pyramid, triangular pyramid, pentagonal prism.`, [ans], ans, `A solid with ${d} is ${article(ans)} ${ans}.`, { hint: 'Type the name of the solid.' });
+  }
+  function rectProps4() {
+    const items = [
+      ['How many right angles does a rectangle have?', 4], ['How many pairs of parallel sides does a rectangle have?', 2], ['How many lines of symmetry does a rectangle (that is not a square) have?', 2],
+      ['How many sides does a rectangle have?', 4]
+    ];
+    if (Math.random() < 0.5) {
+      const [q, n] = pick(items);
+      return makeNum('geometry', q, n, `A rectangle has 4 sides and 4 right angles. Its opposite sides are parallel and equal, so it has 2 pairs of parallel sides. It has 2 lines of symmetry (through the middle of opposite sides).`, { hint: 'Enter a number.' });
+    }
+    const yn = [['Are the opposite sides of a rectangle equal in length?', true], ['Are all four sides of every rectangle equal in length?', false], ['Is every square also a rectangle?', true],
+      ['Are the opposite sides of a rectangle parallel?', true], ['Does a rectangle have any angles that are not right angles?', false]];
+    const [q, yes] = pick(yn);
+    return makeYesNo('geometry', q, yes, yes ? 'Yes. This is a property of rectangles (4 right angles, opposite sides equal and parallel).' : 'No. A rectangle has 4 right angles, and only its opposite sides have to be equal.');
+  }
+  function triProps5() {
+    const t = randInt(1, 3);
+    if (t === 1) {
+      const k = randInt(1, 3);
+      let a = randInt(3, 12), b, c, ans;
+      if (k === 1) { b = a; c = a; ans = 'equilateral'; }
+      else if (k === 2) { b = a; do { c = randInt(2, 2 * a - 1); } while (c === a); ans = 'isosceles'; }
+      else { do { b = randInt(3, 12); c = randInt(3, 12); } while (a === b || b === c || a === c || a + b <= c || a + c <= b || b + c <= a); ans = 'scalene'; }
+      const sides = shuffle([a, b, c]);
+      return makeText('geometry', `A triangle has sides of ${sides[0]} cm, ${sides[1]} cm and ${sides[2]} cm. Is it equilateral, isosceles or scalene?`, [ans], ans,
+        ans === 'equilateral' ? 'All three sides are equal, so it is equilateral.' : ans === 'isosceles' ? 'Exactly two sides are equal, so it is isosceles.' : 'All three sides are different, so it is scalene.', { hint: 'Type equilateral, isosceles or scalene.' });
+    }
+    if (t === 2) {
+      const kind = pick(['acute', 'right', 'obtuse']);
+      let A, B, C;
+      if (kind === 'right') { A = 90; B = randInt(20, 70); C = 90 - B; }
+      else if (kind === 'obtuse') { A = randInt(95, 130); B = randInt(10, 175 - A); C = 180 - A - B; if (C < 5) return triProps5(); }
+      else { do { A = randInt(40, 80); B = randInt(40, 80); C = 180 - A - B; } while (C >= 90 || C < 30); }
+      const angs = shuffle([A, B, C]);
+      return makeText('geometry', `A triangle has angles of ${angs[0]}°, ${angs[1]}° and ${angs[2]}°. Is it an acute, right or obtuse triangle?`, [kind], kind,
+        kind === 'right' ? 'It has a 90° angle, so it is a right triangle.' : kind === 'obtuse' ? 'It has an angle greater than 90°, so it is obtuse.' : 'All three angles are less than 90°, so it is acute.', { hint: 'Type acute, right or obtuse.' });
+    }
+    const A = randInt(20, 100), B = randInt(20, 150 - A + 20);
+    if (A + B >= 175) return triProps5();
+    return makeNum('geometry', `Two angles of a triangle are ${A}° and ${B}°. What is the measure of the third angle?`, 180 - A - B, `The three angles of a triangle add to 180°. 180° − ${A}° − ${B}° = ${180 - A - B}°.`, { units: units('deg'), hint: 'Enter a number of degrees.' });
+  }
+
+  // ---------- location and movement / coordinates ----------
+  const POS_PAIRS = [['above', 'below', ['below', 'under'], ['above', 'over']], ['in front of', 'behind', ['behind'], ['in front of', 'in front']], ['to the left of', 'to the right of', ['to the right of', 'right of', 'right'], ['to the left of', 'left of', 'left']]];
+  const POS_ITEMS = ['cat', 'dog', 'ball', 'bird', 'book', 'tree', 'table', 'box'];
+  function position1() {
+    const [x, y] = two(POS_ITEMS), [r0, r1, acc1, acc0] = pick(POS_PAIRS), flip = Math.random() < 0.5;
+    const rel = flip ? r1 : r0, ask = flip ? r0 : r1, acc = flip ? acc0 : acc1;
+    return makeText('coordinates', `The ${x} is ${rel} the ${y}. Where is the ${y} compared to the ${x}? Type "${r0}" or "${r1}".`, acc, ask, `If the ${x} is ${rel} the ${y}, then the ${y} is ${ask} the ${x}.`, { hint: `Type ${r0} or ${r1}.` });
+  }
+  function steps1() {
+    const nm = pick(NAMES), a = randInt(3, 9), b = randInt(1, a - 1);
+    return makeNum('coordinates', `${nm} takes ${a} steps forward and then ${b} ${b === 1 ? 'step' : 'steps'} back. How many steps is ${nm} from the start?`, a - b, `${a} − ${b} = ${a - b}.`, { hint: 'Enter a number.' });
+  }
+  const MAP_NAMES = ['Park', 'School', 'Store', 'Home', 'Pool', 'Library'];
+  function mapItems(cols, rows, n) {
+    const names = shuffle(MAP_NAMES).slice(0, n), used = new Set(), items = [];
+    names.forEach(label => {
+      for (;;) { const c = randInt(1, cols), r = randInt(1, rows), key = `${c},${r}`; if (!used.has(key)) { used.add(key); items.push({ c, r, label }); break; } }
+    });
+    return items;
+  }
+  const codeOf = (c, r) => `${String.fromCharCode(64 + c)}${r}`;
+  function mapRead2() {
+    const cols = 5, rows = 4, items = mapItems(cols, rows, 5), it = pick(items);
+    return makeText('coordinates', `On the map, which square is the ${it.label} in? (Give the letter and then the number, like C3.)`, [codeOf(it.c, it.r)], codeOf(it.c, it.r),
+      `Find the ${it.label}. Look at the letter at the bottom and the number at the side: ${codeOf(it.c, it.r)}.`, { visual: svgMapGrid(cols, rows, items), hint: 'Type a letter and a number, like C3.' });
+  }
+  function mapMove2() {
+    const cols = 5, rows = 4;
+    for (let i = 0; i < 100; i++) {
+      const items = mapItems(cols, rows, 5), a = pick(items), b = pick(items);
+      const dx = b.c - a.c, dy = b.r - a.r;
+      if (a === b || (dx === 0 && dy === 0) || Math.abs(dx) > 4) continue;
+      const parts = [];
+      if (dx) parts.push(`${Math.abs(dx)} square${Math.abs(dx) > 1 ? 's' : ''} ${dx > 0 ? 'right' : 'left'}`);
+      if (dy) parts.push(`${Math.abs(dy)} square${Math.abs(dy) > 1 ? 's' : ''} ${dy > 0 ? 'up' : 'down'}`);
+      return makeText('coordinates', `Start at the ${a.label} on the map. Move ${parts.join(' and ')}. What building is in that square?`, [b.label.toLowerCase()], b.label,
+        `Start at ${codeOf(a.c, a.r)}. Moving ${parts.join(' and ')} takes you to ${codeOf(b.c, b.r)}, where the ${b.label} is.`, { visual: svgMapGrid(cols, rows, items), hint: 'Type the name of the building.' });
+    }
+    return mapMove2();
+  }
+  const COMPASS = ['north', 'east', 'south', 'west'];
+  function turn3() {
+    const start = randInt(0, 3), turns = [['a quarter turn clockwise (to the right)', 1], ['a quarter turn counterclockwise (to the left)', -1], ['a half turn', 2]];
+    const t1 = pick(turns), two1 = Math.random() < 0.5, t2 = pick(turns);
+    const end = ((start + t1[1] + (two1 ? t2[1] : 0)) % 4 + 4) % 4;
+    return makeText('coordinates', `You are facing ${COMPASS[start]}. You make ${t1[0]}${two1 ? ` and then ${t2[0]}` : ''}. Which direction are you facing now? (north, east, south or west)`, [COMPASS[end]], COMPASS[end],
+      `Clockwise from north is east, then south, then west. ${two1 ? 'Doing the turns one at a time' : 'After the turn'} you face ${COMPASS[end]}.`, { hint: 'Type north, east, south or west.' });
+  }
+  function mapRoute3() {
+    const cols = 6, rows = 5;
+    for (let i = 0; i < 100; i++) {
+      const c = randInt(1, cols), r = randInt(1, rows), dirs = shuffle([['east', 1, 0], ['west', -1, 0], ['north', 0, 1], ['south', 0, -1]]).slice(0, 2);
+      const n1 = randInt(1, 4), n2 = randInt(1, 3), c2 = c + dirs[0][1] * n1 + dirs[1][1] * n2, r2 = r + dirs[0][2] * n1 + dirs[1][2] * n2;
+      if (c2 < 1 || c2 > cols || r2 < 1 || r2 > rows || (dirs[0][1] && dirs[1][1]) || (dirs[0][2] && dirs[1][2])) continue;
+      return makeText('coordinates', `Start at the square marked "Start" on the map. Go ${n1} square${n1 > 1 ? 's' : ''} ${dirs[0][0]} and then ${n2} square${n2 > 1 ? 's' : ''} ${dirs[1][0]}. Which square do you end in? (Give the letter and the number, like D4.)`,
+        [codeOf(c2, r2)], codeOf(c2, r2), `Start in ${codeOf(c, r)}. Going ${n1} ${dirs[0][0]} and ${n2} ${dirs[1][0]} takes you to ${codeOf(c2, r2)}.`, { visual: svgMapGrid(cols, rows, [{ c, r, label: 'Start' }]), hint: 'Type a letter and a number, like D4.' });
+    }
+    return mapRoute3();
+  }
+  function gridScale(g) { return g === 4 ? 1 : pick([1, 1, 2, 5]); }
+  function readPoint(g) {
+    const sc = gridScale(g), M = sc === 1 ? 10 : sc === 2 ? 20 : 50, x = randInt(1, M / sc) * sc, y = randInt(1, M / sc) * sc;
+    return makePoint('coordinates', 'What are the coordinates of point P? (Write the x-number first, then the y-number.)', x, y,
+      `Start at 0, go across to ${x} and up to ${y}: P is at (${x}, ${y}).`, { visual: svgGrid1([{ x, y, label: 'P' }], { max: M, scale: sc }) });
+  }
+  function translatePt(g) {
+    const sc = gridScale(g), M = sc === 1 ? 10 : sc === 2 ? 20 : 50, N = M / sc;
+    for (;;) {
+      const x = randInt(1, N - 1) * sc, y = randInt(1, N - 1) * sc, dx = randInt(-4, 4) * sc, dy = randInt(-4, 4) * sc;
+      if ((!dx && !dy) || x + dx < 0 || x + dx > M || y + dy < 0 || y + dy > M) continue;
+      const parts = [];
+      if (dx) parts.push(`${Math.abs(dx)} unit${Math.abs(dx) > 1 ? 's' : ''} ${dx > 0 ? 'right' : 'left'}`);
+      if (dy) parts.push(`${Math.abs(dy)} unit${Math.abs(dy) > 1 ? 's' : ''} ${dy > 0 ? 'up' : 'down'}`);
+      return makePoint('coordinates', `Point A is at (${x}, ${y}). It moves ${parts.join(' and ')}. What are the coordinates of its new position?`, x + dx, y + dy,
+        `Right/left changes the x-number and up/down changes the y-number: (${x + dx}, ${y + dy}).`, { visual: svgGrid1([{ x, y, label: 'A' }], { max: M, scale: sc }) });
+    }
+  }
+  function findTranslation(g) {
+    const sc = gridScale(g), M = sc === 1 ? 10 : sc === 2 ? 20 : 50, N = M / sc;
+    for (;;) {
+      const a = [randInt(1, N) * sc, randInt(1, N) * sc], b = [randInt(1, N) * sc, randInt(1, N) * sc];
+      if (a[0] === b[0] && a[1] === b[1]) continue;
+      return makePoint('coordinates', `A point moves from (${a[0]}, ${a[1]}) to (${b[0]}, ${b[1]}). Describe the translation as (right, up). Use negative numbers for left or down.`, b[0] - a[0], b[1] - a[1],
+        `Right/left: ${b[0]} − ${a[0]} = ${b[0] - a[0]}. Up/down: ${b[1]} − ${a[1]} = ${b[1] - a[1]}.`, { visual: svgGrid1([{ x: a[0], y: a[1], label: 'A' }, { x: b[0], y: b[1], label: 'B' }], { max: M, scale: sc }), hint: 'Enter (right, up), like (3, -2).' });
+    }
+  }
+  function reflectLine(g) {
+    const sc = gridScale(g), M = sc === 1 ? 10 : sc === 2 ? 20 : 50, N = M / sc, vertical = Math.random() < 0.5;
+    for (let i = 0; i < 200; i++) {
+      const k = randInt(2, N - 1) * sc, x = randInt(1, N) * sc, y = randInt(1, N) * sc, v = vertical ? x : y, img = 2 * k - v;
+      if (v === k || img < 0 || img > M) continue;
+      const P = vertical ? [x, y] : [x, y], Q = vertical ? [img, y] : [x, img];
+      return makePoint('coordinates', `Reflect the point P(${x}, ${y}) in the ${vertical ? 'vertical' : 'horizontal'} line ${vertical ? 'x' : 'y'} = ${k}. What are the coordinates of the image of P?`, Q[0], Q[1],
+        `The image is the same distance from the line on the other side. P is ${Math.abs(v - k)} away from ${vertical ? 'x' : 'y'} = ${k}, so the image is ${vertical ? `at x = ${img}` : `at y = ${img}`}: (${Q[0]}, ${Q[1]}).`,
+        { visual: svgGrid1([{ x, y, label: 'P' }], vertical ? { max: M, scale: sc, vline: k } : { max: M, scale: sc, hline: k }) });
+    }
+    return reflectLine(g);
+  }
+  function rotate180() {
+    const sc = pick([1, 1, 2]), M = sc === 1 ? 10 : 20, N = M / sc;
+    for (let i = 0; i < 200; i++) {
+      const cx = randInt(2, N - 1) * sc, cy = randInt(2, N - 1) * sc, x = randInt(1, N) * sc, y = randInt(1, N) * sc, ix = 2 * cx - x, iy = 2 * cy - y;
+      if ((x === cx && y === cy) || ix < 0 || ix > M || iy < 0 || iy > M) continue;
+      return makePoint('coordinates', `The point P(${x}, ${y}) is rotated 180° about the point C(${cx}, ${cy}). What are the coordinates of the image of P?`, ix, iy,
+        `A 180° turn about C sends P straight through C to the other side, the same distance away. Right/left: ${cx} − ${x} = ${cx - x} more, so x = ${ix}. Up/down: ${cy} − ${y} = ${cy - y} more, so y = ${iy}.`,
+        { visual: svgGrid1([{ x, y, label: 'P' }, { x: cx, y: cy, label: 'C' }], { max: M, scale: sc }) });
+    }
+    return rotate180();
+  }
+
+  // ---------- measurement ----------
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  function calendar1() {
+    const t = randInt(1, 6);
+    if (t === 1) { const i = randInt(0, 6); return makeText('measurement', `What day comes after ${DAYS[i]}?`, [DAYS[(i + 1) % 7].toLowerCase()], DAYS[(i + 1) % 7], `The days go in order: ${DAYS[i]}, then ${DAYS[(i + 1) % 7]}.`, { hint: 'Type the name of the day.' }); }
+    if (t === 2) { const i = randInt(0, 6); return makeText('measurement', `What day comes before ${DAYS[i]}?`, [DAYS[(i + 6) % 7].toLowerCase()], DAYS[(i + 6) % 7], `The day before ${DAYS[i]} is ${DAYS[(i + 6) % 7]}.`, { hint: 'Type the name of the day.' }); }
+    if (t === 3) { const i = randInt(0, 11); return makeText('measurement', `Which month comes after ${MONTHS[i]}?`, [MONTHS[(i + 1) % 12].toLowerCase()], MONTHS[(i + 1) % 12], `The months go in order. After ${MONTHS[i]} comes ${MONTHS[(i + 1) % 12]}.`, { hint: 'Type the name of the month.' }); }
+    if (t === 4) { return Math.random() < 0.5 ? makeNum('measurement', 'How many days are in one week?', 7, 'There are 7 days in a week.', { hint: 'Enter a number.' }) : makeNum('measurement', 'How many months are in one year?', 12, 'There are 12 months in a year.', { hint: 'Enter a number.' }); }
+    const i = randInt(0, 11), season = [11, 0, 1].includes(i) ? 'winter' : [2, 3, 4].includes(i) ? 'spring' : [5, 6, 7].includes(i) ? 'summer' : 'fall';
+    return makeText('measurement', `In Ontario, which season is ${MONTHS[i]} in? (spring, summer, fall or winter)`, season === 'fall' ? ['fall', 'autumn'] : [season], season,
+      `Winter is December to February, spring is March to May, summer is June to August and fall is September to November. ${MONTHS[i]} is in ${season}.`, { hint: 'Type spring, summer, fall or winter.' });
+  }
+  const COMPARE1 = [['Which is longer: a pencil or a school bus?', 'school bus'], ['Which is heavier: a cat or an elephant?', 'elephant'], ['Which holds more water: a cup or a bathtub?', 'bathtub'],
+    ['Which is shorter: a bus or a bicycle?', 'bicycle'], ['Which is lighter: a feather or a rock?', 'feather'], ['Which holds less water: a spoon or a bucket?', 'spoon'],
+    ['Which covers more space (has more area): a postage stamp or a door?', 'door'], ['Which is longer: your arm or your finger?', 'arm']];
+  function compare1() {
+    const [q, ans] = pick(COMPARE1);
+    return makeText('measurement', q, [ans, 'a ' + ans, 'the ' + ans], ans, `The ${ans} is the right answer.`, { hint: 'Type your answer.' });
+  }
+  function ruler2() {
+    const a = randInt(0, 7), len = randInt(3, 8);
+    return makeNum('measurement', 'How long is the object in the picture, in centimetres? (Look carefully at where it starts.)', len,
+      `It starts at ${a} and ends at ${a + len}. The length is ${a + len} − ${a} = ${len} cm.`, { visual: svgRuler(a, a + len), units: units('cm'), hint: 'Enter a number of cm.' });
+  }
+  function cmm2() {
+    const n = randInt(2, 9);
+    if (Math.random() < 0.5) return makeNum('measurement', `How many centimetres are in ${n} metres?`, n * 100, `1 metre = 100 cm, so ${n} m = ${n} × 100 = ${n * 100} cm.`, { units: units('cm'), hint: 'Enter a number.' });
+    return makeNum('measurement', `How many metres are in ${n * 100} centimetres?`, n, `100 cm = 1 m, so ${n * 100} cm = ${n} m.`, { units: units('m'), hint: 'Enter a number.' });
+  }
+  const TIME_UNITS = [['how long it takes to brush your teeth', 'minutes'], ['how long a sneeze lasts', 'seconds'], ['how long a school day is', 'hours'], ['how long it takes to blink', 'seconds'],
+    ['how long a movie is', 'hours'], ['how long it takes to eat lunch', 'minutes']];
+  function timeUnit2() {
+    const [x, ans] = pick(TIME_UNITS);
+    return makeText('measurement', `Which unit would you use to measure ${x}: seconds, minutes or hours?`, [ans], ans, `${x.charAt(0).toUpperCase() + x.slice(1)} is best measured in ${ans}.`, { hint: 'Type seconds, minutes or hours.' });
+  }
+  function nonStd2() {
+    const nm = pick(NAMES);
+    return makeText('measurement', `${nm} measures the same desk with paper clips and then with pencils. A pencil is much longer than a paper clip. Which measurement gives the bigger number: paper clips or pencils?`, ['paper clips', 'paperclips', 'clips'], 'paper clips',
+      'It takes more small units than big units to cover the same length, so the number of paper clips is bigger.', { hint: 'Type paper clips or pencils.' });
+  }
+  function perimeter3() {
+    const t = randInt(1, 3);
+    if (t === 1) { const l = randInt(3, 15), w = randInt(2, l); return makeNum('measurement', `A rectangle is ${l} cm long and ${w} cm wide. What is its perimeter, in cm?`, 2 * (l + w), `Add all four sides: ${l} + ${w} + ${l} + ${w} = ${2 * (l + w)} cm.`, { units: units('cm') }); }
+    if (t === 2) { const s = randInt(2, 15); return makeNum('measurement', `A square has sides of ${s} cm. What is its perimeter, in cm?`, 4 * s, `4 sides of ${s} cm: ${s} + ${s} + ${s} + ${s} = ${4 * s} cm.`, { units: units('cm') }); }
+    const n = randInt(4, 5), sides = Array.from({ length: n }, () => randInt(2, 12));
+    return makeNum('measurement', `A shape has ${n} sides that measure ${sides.join(' cm, ')} cm. What is its perimeter, in cm?`, sides.reduce((s, x) => s + x, 0), `Add all the sides: ${sides.join(' + ')} = ${sides.reduce((s, x) => s + x, 0)} cm.`, { units: units('cm') });
+  }
+  function lenUnits3() {
+    const k = randInt(1, 3), n = randInt(2, 9);
+    const [big, small, f] = [['cm', 'mm', 10], ['m', 'cm', 100], ['km', 'm', 1000]][k - 1], names = { cm: 'centimetres', mm: 'millimetres', m: 'metres', km: 'kilometres' };
+    if (Math.random() < 0.6) return makeNum('measurement', `How many ${names[small]} are in ${n} ${names[big]}?`, n * f, `1 ${big} = ${f} ${small}, so ${n} ${big} = ${n} × ${f} = ${n * f} ${small}.`, { units: units(small), hint: 'Enter a number.' });
+    return makeNum('measurement', `How many ${names[big]} are in ${n * f} ${names[small]}?`, n, `${f} ${small} = 1 ${big}, so ${n * f} ${small} = ${n} ${big}.`, { units: units(big), hint: 'Enter a number.' });
+  }
+  function timeText(h, m) { return `${h}:${String(m).padStart(2, '0')}`; }
+  function timeAccepted(h, m) { return [timeText(h, m), `${h}${String(m).padStart(2, '0')}`]; }
+  function clock3() {
+    const h = randInt(1, 12), m = Math.random() < 0.7 ? randInt(0, 11) * 5 : randInt(0, 59);
+    return makeText('measurement', 'What time does the clock show? (Type it like 3:45.)', timeAccepted(h, m), timeText(h, m),
+      `The short hour hand points near ${h} and the long minute hand points to ${m === 0 ? '12 (o\'clock)' : m % 5 === 0 ? m / 5 : `${Math.floor(m / 5)} and ${m % 5} more tick marks`}. Minutes: count by 5s around the clock to get ${m}. The time is ${timeText(h, m)}.`,
+      { visual: svgClock(h, m), hint: 'Type the time like 3:45.' });
+  }
+  function timeFacts3() {
+    const n = randInt(2, 9);
+    if (Math.random() < 0.5) return makeNum('measurement', `How many minutes are in ${n} hours?`, n * 60, `1 hour = 60 minutes, so ${n} hours = ${n} × 60 = ${n * 60} minutes.`, { units: units('minutes'), hint: 'Enter a number.' });
+    return makeNum('measurement', `How many seconds are in ${n} minutes?`, n * 60, `1 minute = 60 seconds, so ${n} minutes = ${n} × 60 = ${n * 60} seconds.`, { units: units('seconds'), hint: 'Enter a number.' });
+  }
+  function areaGrid3() {
+    const w = randInt(2, 9), h = randInt(2, 6);
+    return makeNum('measurement', 'What is the area of the rectangle, in square units? (Each small square is 1 square unit.)', w * h, `Count the squares: ${h} rows of ${w} squares, so ${h} × ${w} = ${w * h} square units.`, { visual: svgAreaGrid(w, h), hint: 'Enter a number.' });
+  }
+  function massCap4() {
+    const t = randInt(1, 3), n = randInt(2, 9);
+    if (t === 1) return makeNum('measurement', `${n} kg = ? g`, n * 1000, `1 kg = 1000 g, so ${n} kg = ${n} × 1000 = ${n * 1000} g.`, { units: units('g'), hint: 'Enter a number.' });
+    if (t === 2) return makeNum('measurement', `${n} L = ? mL`, n * 1000, `1 L = 1000 mL, so ${n} L = ${n} × 1000 = ${n * 1000} mL.`, { units: units('mL'), hint: 'Enter a number.' });
+    const bank = [['the mass of an apple', 'grams', 'kilograms', 'grams', ['grams', 'g']], ['the mass of a car', 'grams', 'kilograms', 'kilograms', ['kilograms', 'kg']],
+      ['the mass of a bag of potatoes', 'grams', 'kilograms', 'kilograms', ['kilograms', 'kg']], ['the mass of a paper clip', 'grams', 'kilograms', 'grams', ['grams', 'g']],
+      ['the amount of medicine in a spoon', 'millilitres', 'litres', 'millilitres', ['millilitres', 'ml', 'milliliters']], ['the amount of water in a swimming pool', 'millilitres', 'litres', 'litres', ['litres', 'l', 'liters']],
+      ['the amount of juice in a juice box', 'millilitres', 'litres', 'millilitres', ['millilitres', 'ml', 'milliliters']], ['the amount of water in a bathtub', 'millilitres', 'litres', 'litres', ['litres', 'l', 'liters']]];
+    const [x, a, b, ans, acc] = pick(bank);
+    return makeText('measurement', `Which unit is best for measuring ${x}: ${a} or ${b}?`, acc, ans, `${x.charAt(0).toUpperCase() + x.slice(1)} is best measured in ${ans}, because that unit is the closest in size.`, { hint: `Type ${a} or ${b}.` });
+  }
+  function elapsed45() {
+    if (Math.random() < 0.5) {
+      const h = randInt(1, 11), m = randInt(0, 11) * 5, d = randInt(4, 40) * 5, total = h * 60 + m + d, eh = Math.floor(total / 60) % 12 || 12, em = total % 60;
+      return makeText('measurement', `A movie starts at ${timeText(h, m)} p.m. and lasts ${d} minutes. At what time does it end? (Type it like 3:45.)`, timeAccepted(eh, em), timeText(eh, em),
+        `${timeText(h, m)} + ${d} minutes (${Math.floor(d / 60)} h ${d % 60} min) = ${timeText(eh, em)}.`, { hint: 'Type the time like 3:45.' });
+    }
+    const h = randInt(1, 9), m = randInt(0, 11) * 5, d = randInt(3, 30) * 5, total = h * 60 + m + d, eh = Math.floor(total / 60), em = total % 60;
+    return makeNum('measurement', `How many minutes pass from ${timeText(h, m)} p.m. to ${timeText(eh, em)} p.m.?`, d, `From ${timeText(h, m)} to ${timeText(eh, em)}: ${d} minutes (${Math.floor(d / 60)} h ${d % 60} min).`, { units: units('minutes'), hint: 'Enter a number of minutes.' });
+  }
+  function angle4() {
+    const deg = pick([30, 40, 60, 90, 90, 110, 120, 135, 150, 180]), kind = deg < 90 ? 'acute' : deg === 90 ? 'right' : deg === 180 ? 'straight' : 'obtuse';
+    return makeText('measurement', 'Is this angle acute, right, obtuse or straight?', [kind], kind,
+      kind === 'acute' ? 'It is smaller than a square corner, so it is acute.' : kind === 'right' ? 'It makes a square corner, so it is a right angle.' : kind === 'obtuse' ? 'It is bigger than a square corner but smaller than a straight line, so it is obtuse.' : 'The two arms make a straight line, so it is a straight angle.', { visual: svgAngle(deg), hint: 'Type acute, right, obtuse or straight.' });
+  }
+  function areaRect4() {
+    const l = randInt(2, 15), w = randInt(2, 12);
+    if (Math.random() < 0.5) return makeNum('measurement', `A rectangle is ${l} m long and ${w} m wide. What is its area, in square metres?`, l * w, `Area = length × width = ${l} × ${w} = ${l * w} m².`, { units: units('m2') });
+    return makeNum('measurement', `The area of a rectangle is ${l * w} cm² and its length is ${l} cm. What is its width, in cm?`, w, `Area = length × width, so width = ${l * w} ÷ ${l} = ${w} cm.`, { units: units('cm') });
+  }
+  function convert5() {
+    const [big, small, f, names] = pick([['km', 'm', 1000, 'kilometres'], ['m', 'cm', 100, 'metres'], ['cm', 'mm', 10, 'centimetres'], ['kg', 'g', 1000, 'kilograms'], ['L', 'mL', 1000, 'litres']]);
+    const q = pick(['2', '3.5', '0.7', '12', '4.25', '0.25', '6.4', '15']);
+    const res = shiftDec(q, Math.log10(f));
+    return makeNum('measurement', `${q} ${big} = ? ${small}`, Number(res), `1 ${big} = ${f} ${small}, so multiply by ${f}: ${q} × ${f} = ${res} ${small}.`, { units: units(small), tol: Math.abs(Number(res)) * 1e-9, display: res, hint: 'Enter a number.' });
+  }
+  function protractor5() {
+    const deg = pick([20, 30, 40, 50, 60, 70, 80, 100, 110, 120, 130, 140, 150, 160]);
+    return makeNum('measurement', 'What is the measure of the angle shown on the protractor? (Read the scale that starts at 0 on the arm along the bottom.)', deg, `The red arm points to ${deg} on the scale that starts at 0 on the right, so the angle measures ${deg}°.`, { visual: svgProtractor(deg), units: units('deg'), hint: 'Enter a number of degrees.' });
+  }
+  function areaShapes5() {
+    const t = randInt(1, 3);
+    if (t === 1) { const b = randInt(3, 15), h = randInt(2, 12); return makeNum('measurement', `A parallelogram has a base of ${b} cm and a height of ${h} cm. What is its area, in cm²?`, b * h, `Area of a parallelogram = base × height = ${b} × ${h} = ${b * h} cm².`, { units: units('cm2') }); }
+    if (t === 2) { const b = randInt(2, 8) * 2, h = randInt(2, 12); return makeNum('measurement', `A triangle has a base of ${b} cm and a height of ${h} cm. What is its area, in cm²?`, b * h / 2, `Area of a triangle = (base × height) ÷ 2 = (${b} × ${h}) ÷ 2 = ${b * h / 2} cm².`, { units: units('cm2') }); }
+    for (;;) {
+      const area = pick([12, 16, 18, 20, 24, 30, 36]), pairs = [];
+      for (let w = 1; w <= area; w++) if (area % w === 0 && w <= area / w) pairs.push([area / w, w]);
+      if (pairs.length < 2) continue;
+      const [A, B] = shuffle(pairs).slice(0, 2), pA = 2 * (A[0] + A[1]), pB = 2 * (B[0] + B[1]);
+      if (pA === pB) continue;
+      const ans = pA > pB ? 'A' : 'B';
+      return makeText('measurement', `Rectangle A is ${A[0]} cm by ${A[1]} cm. Rectangle B is ${B[0]} cm by ${B[1]} cm. They have the same area. Which rectangle has the greater perimeter? Type A or B.`, [ans.toLowerCase(), 'rectangle ' + ans.toLowerCase()], ans,
+        `Perimeter of A = 2 × (${A[0]} + ${A[1]}) = ${pA} cm. Perimeter of B = 2 × (${B[0]} + ${B[1]}) = ${pB} cm. Rectangle ${ans} has the greater perimeter, even though the areas are equal.`, { hint: 'Type A or B.' });
+    }
+  }
+
+  // ---------- financial literacy ----------
+  function coinsShown1() {
+    if (Math.random() < 0.7) {
+      for (;;) {
+        const n = randInt(2, 5), list = Array.from({ length: n }, () => pick([5, 10, 25])), sum = list.reduce((s, x) => s + x, 0);
+        if (sum > 50) continue;
+        return makeNum('financial', 'How much money is shown, in cents?', sum, `Add the coins: ${list.join(' + ')} = ${sum}¢.`, { visual: svgMoney(list.map(c => COIN_ITEMS[c])), units: units('cents'), hint: 'Enter a number of cents.' });
+      }
+    }
+    const n = randInt(2, 3), list = Array.from({ length: n }, () => pick([5, 10, 20, 50]) * 100), sum = list.reduce((s, x) => s + x, 0);
+    if (sum > 5000) return coinsShown1();
+    return makeNum('financial', 'How much money is shown, in dollars?', sum / 100, `Add the bills: ${list.map(x => '$' + x / 100).join(' + ')} = $${sum / 100}.`, { visual: svgMoney(list.map(c => COIN_ITEMS[c])), units: units('dollar'), hint: 'Enter an amount in dollars.' });
+  }
+  function coinsText1() {
+    const d = randInt(1, 3), n = randInt(1, 4), q = Math.random() < 0.3 ? 1 : 0, total = d * 10 + n * 5 + q * 25;
+    if (total > 50) return coinsText1();
+    return makeNum('financial', `What is the value of ${pv(d, 'dime')}${q ? ', 1 quarter' : ''} and ${pv(n, 'nickel')}, in cents?`, total, `A dime is 10¢, a nickel is 5¢${q ? ' and a quarter is 25¢' : ''}. ${d} × 10 + ${n} × 5${q ? ' + 25' : ''} = ${total}¢.`, { units: units('cents'), hint: 'Enter a number of cents.' });
+  }
+  function compareMoney1() {
+    const opts = [['3 nickels', 15, '1 dime', 10], ['2 dimes', 20, '1 quarter', 25], ['5 nickels', 25, '2 dimes', 20], ['1 quarter', 25, '3 dimes', 30], ['4 nickels', 20, '1 quarter', 25], ['2 nickels', 10, '1 dime', 10], ['a $5 bill', 500, 'a $10 bill', 1000]];
+    const [a, va, b, vb] = pick(opts.filter(o => o[1] !== o[3])), ans = va > vb ? 'A' : 'B';
+    return makeText('financial', `A: ${a}   B: ${b}. Which is worth more? Type A or B.`, [ans.toLowerCase()], ans, `A is worth ${va >= 500 ? '$' + va / 100 : va + '¢'} and B is worth ${vb >= 500 ? '$' + vb / 100 : vb + '¢'}, so ${ans} is worth more.`, { hint: 'Type A or B.' });
+  }
+  function coins2() {
+    const t = randInt(1, 4);
+    if (t === 1) {
+      const q = randInt(0, 4), d = randInt(0, 4), n = randInt(0, 4), total = q * 25 + d * 10 + n * 5;
+      if (total === 0 || q + d + n < 3) return coins2();
+      const parts = [q && pv(q, 'quarter'), d && pv(d, 'dime'), n && pv(n, 'nickel')].filter(Boolean);
+      return makeNum('financial', `${pick(NAMES)} has ${parts.join(', ').replace(/, ([^,]*)$/, ' and $1')}. How many cents is that?`, total, `${q ? q + ' × 25 + ' : ''}${d ? d + ' × 10 + ' : ''}${n ? n + ' × 5 + ' : ''}`.replace(/ \+ $/, '') + ` = ${total}¢.`, { units: units('cents'), hint: 'Enter a number of cents.' });
+    }
+    if (t === 2) {
+      const q = randInt(1, 4), d = randInt(1, 3), n = randInt(1, 3), total = q * 25 + d * 10 + n * 5;
+      return makeNum('financial', `${total}¢ = ${pv(q, 'quarter')} + ${pv(d, 'dime')} + ? ${'nickels'}`, n, `${q} × 25 = ${q * 25} and ${d} × 10 = ${d * 10}, so ${total} − ${q * 25 + d * 10} = ${n * 5} is left. ${n * 5} ÷ 5 = ${n} nickels.`, { hint: 'Enter the missing number of nickels.' });
+    }
+    if (t === 3) {
+      const k = randInt(2, 9), toonie = Math.random() < 0.5;
+      return makeNum('financial', `How many ${toonie ? '$2 coins (toonies)' : '$5 bills'} make $${k * (toonie ? 2 : 5)}?`, k, `$${k * (toonie ? 2 : 5)} ÷ $${toonie ? 2 : 5} = ${k}.`, { hint: 'Enter a number.' });
+    }
+    const list = shuffle([pick([100, 200]), pick([100, 200]), pick([500, 1000]), pick([500, 1000, 2000])]), sum = list.reduce((s, x) => s + x, 0);
+    return makeNum('financial', 'How much money is shown, in dollars?', sum / 100, `Add: ${list.map(x => '$' + x / 100).join(' + ')} = $${sum / 100}.`, { visual: svgMoney(list.map(c => COIN_ITEMS[c])), units: units('dollar'), hint: 'Enter an amount in dollars.' });
+  }
+  function change3() {
+    const nm = pick(NAMES);
+    if (Math.random() < 0.5) {
+      const p = randInt(1, 19) * 5;
+      return makeNum('financial', `${nm} buys a sticker for ${p}¢ and pays with $1. How much change should ${nm} get, in cents?`, 100 - p, `$1 = 100¢. 100 − ${p} = ${100 - p}¢.`, { units: units('cents'), hint: 'Enter a number of cents.' });
+    }
+    const pay = pick([5, 10, 20]), p = randInt(1, pay - 1);
+    return makeNum('financial', `${nm} buys a toy for $${p} and pays with a $${pay} bill. How much change should ${nm} get, in dollars?`, pay - p, `${pay} − ${p} = ${pay - p}, so the change is $${pay - p}.`, { units: units('dollar'), hint: 'Enter an amount in dollars.' });
+  }
+  function cost4() {
+    const nm = pick(NAMES), t = randInt(1, 3);
+    if (t === 1) {
+      const n = randInt(3, 4), prices = Array.from({ length: n }, () => randInt(2, 15)), total = prices.reduce((s, x) => s + x, 0);
+      return makeNum('financial', `${nm} buys items that cost ${prices.map(p => '$' + p).join(', ').replace(/, ([^,]*)$/, ' and $1')}. What is the total cost, in dollars?`, total, `Add the prices: ${prices.join(' + ')} = ${total}.`, { units: units('dollar'), hint: 'Enter an amount in dollars.' });
+    }
+    if (t === 2) {
+      const prices = [randInt(2, 15), randInt(2, 15), randInt(2, 12)], total = prices.reduce((s, x) => s + x, 0), pay = total <= 20 ? 20 : 50;
+      return makeNum('financial', `${nm} buys items that cost $${prices[0]}, $${prices[1]} and $${prices[2]} and pays with $${pay}. How much change should ${nm} get, in dollars?`, pay - total, `Total: ${prices.join(' + ')} = ${total}. Change: ${pay} − ${total} = ${pay - total}.`, { units: units('dollar'), hint: 'Enter an amount in dollars.' });
+    }
+    const w = randInt(2, 10) * 2, k = randInt(2, 8);
+    return makeNum('financial', `${nm} earns $${w} each week and saves half of it. How much does ${nm} save in ${k} weeks, in dollars?`, w / 2 * k, `Half of $${w} is $${w / 2} each week. ${k} × ${w / 2} = ${w / 2 * k}.`, { units: units('dollar'), hint: 'Enter an amount in dollars.' });
+  }
+  function tax5() {
+    const p = randInt(2, 60), nm = pick(NAMES);
+    if (Math.random() < 0.5) return makeNum('financial', `A game costs $${p} before tax. The sales tax is 13%. How much is the tax, in dollars?`, r6(p * 0.13), `13% of ${p} = ${p} × 0.13 = ${n2s(r6(p * 0.13))}.`, { units: units('dollar'), tol: 0.005, hint: 'Enter an amount in dollars.' });
+    return makeNum('financial', `A game costs $${p} before tax. The sales tax is 13%. What is the total cost, in dollars?`, r6(p * 1.13), `Tax: ${p} × 0.13 = ${n2s(r6(p * 0.13))}. Total: ${p} + ${n2s(r6(p * 0.13))} = ${n2s(r6(p * 1.13))}.`, { units: units('dollar'), tol: 0.005, hint: 'Enter an amount in dollars.' });
+  }
+  function budget5() {
+    const nm = pick(NAMES), income = randInt(4, 12) * 100, items = [['rent', randInt(1, 4) * 100], ['food', randInt(1, 2) * 100], ['transportation', randInt(1, 3) * 50]];
+    const spend = items.reduce((s, x) => s + x[1], 0);
+    if (spend >= income) return budget5();
+    return makeNum('financial', `${nm} earns $${income} each month. ${nm} spends ${items.map(x => `$${x[1]} on ${x[0]}`).join(', ').replace(/, ([^,]*)$/, ' and $1')}. How much money is left to save?`, income - spend, `Spending: ${items.map(x => x[1]).join(' + ')} = ${spend}. Left over: ${income} − ${spend} = ${income - spend}.`, { units: units('dollar'), hint: 'Enter an amount in dollars.' });
+  }
+  function unitRate5() {
+    const n = pick([2, 3, 4, 5, 6, 8, 10, 12]), u = randInt(25, 400) / 100, total = r6(u * n), itemPair = pick([['muffin', 'muffins'], ['juice box', 'juice boxes'], ['pencil', 'pencils'], ['banana', 'bananas']]), item = itemPair[0];
+    return makeNum('financial', `${n} ${itemPair[1]} cost $${total.toFixed(2)}. What is the cost of 1 ${item}, in dollars?`, u, `Divide the total by ${n}: ${total.toFixed(2)} ÷ ${n} = ${u.toFixed(2)}.`, { units: units('dollar'), tol: 0.005, display: u.toFixed(2), hint: 'Enter an amount in dollars.' });
+  }
+  function bestValue5() {
+    for (;;) {
+      const n1 = pick([2, 3, 4, 5, 6]), n2 = pick([6, 8, 10, 12]), u1 = randInt(50, 200) / 100, u2 = randInt(50, 200) / 100, t1 = r6(u1 * n1), t2 = r6(u2 * n2);
+      if (Math.abs(u1 - u2) < 0.1) continue;
+      const ans = u1 < u2 ? 'A' : 'B';
+      return makeText('financial', `Pack A has ${n1} granola bars for $${t1.toFixed(2)}. Pack B has ${n2} granola bars for $${t2.toFixed(2)}. Which pack costs less per bar? Type A or B.`, [ans.toLowerCase(), 'pack ' + ans.toLowerCase()], ans,
+        `Pack A: ${t1.toFixed(2)} ÷ ${n1} = $${u1.toFixed(2)} per bar. Pack B: ${t2.toFixed(2)} ÷ ${n2} = $${u2.toFixed(2)} per bar. Pack ${ans} costs less per bar.`, { hint: 'Type A or B.' });
+    }
+  }
+
+  // ---------- registry (Spatial, Financial) ----------
+  GENERATORS.geometry[1] = [shapeSides.bind(null, 1), shapeSides.bind(null, 1), shapeName.bind(null, 1), shapeName.bind(null, 1), solidFromObject];
+  GENERATORS.geometry[2] = [shapeSides.bind(null, 2), shapeName.bind(null, 2), shapeDescribe, shapeDescribe, shapeSymmetry, solidFromObject];
+  GENERATORS.geometry[3] = [solidCount3, solidCount3, solidCount3, solidFromFaces, solidFromFaces];
+  GENERATORS.geometry[4] = [rectProps4];
+  GENERATORS.geometry[5] = [triProps5, triProps5, triProps5, rectProps4];
+  GENERATORS.coordinates[1] = [position1, position1, steps1];
+  GENERATORS.coordinates[2] = [mapRead2, mapRead2, mapMove2, mapMove2, position1];
+  GENERATORS.coordinates[3] = [turn3, turn3, mapRoute3, mapRoute3];
+  GENERATORS.coordinates[4] = [readPoint.bind(null, 4), readPoint.bind(null, 4), translatePt.bind(null, 4), findTranslation.bind(null, 4), reflectLine.bind(null, 4)];
+  GENERATORS.coordinates[5] = [readPoint.bind(null, 5), translatePt.bind(null, 5), findTranslation.bind(null, 5), reflectLine.bind(null, 5), rotate180];
+  GENERATORS.measurement[1] = [calendar1, calendar1, compare1, compare1];
+  GENERATORS.measurement[2] = [ruler2, ruler2, cmm2, timeUnit2, nonStd2];
+  GENERATORS.measurement[3] = [perimeter3, perimeter3, lenUnits3, clock3, clock3, timeFacts3, areaGrid3, areaGrid3];
+  GENERATORS.measurement[4] = [massCap4, massCap4, elapsed45, elapsed45, angle4, angle4, areaRect4, areaRect4];
+  GENERATORS.measurement[5] = [convert5, convert5, protractor5, protractor5, areaShapes5, areaShapes5, elapsed45];
+  GENERATORS.financial[1] = [coinsShown1, coinsShown1, coinsText1, compareMoney1];
+  GENERATORS.financial[2] = [coins2, coins2, coins2, coins2];
+  GENERATORS.financial[3] = [change3, change3];
+  GENERATORS.financial[4] = [cost4, cost4, cost4];
+  GENERATORS.financial[5] = [tax5, tax5, budget5, unitRate5, bestValue5];
+
   // ---------- state ----------
   const MAX_QUESTIONS_PER_TOPIC = 5;
   const GRADE_KEY = 'mathPractice67_grade_v1';
@@ -4352,7 +6002,7 @@
   function loadGrade() {
     try {
       const raw = localStorage.getItem(GRADE_KEY);
-      return raw === '6' || raw === '7' || raw === '8' ? Number(raw) : null;
+      return /^[1-8]$/.test(raw || '') ? Number(raw) : null;
     } catch (e) {
       return null;
     }
@@ -4410,28 +6060,32 @@
     gradeGate.style.display = 'none';
     mainArea.style.display = 'block';
     currentGradeLabel.textContent = `Grade ${selectedGrade}`;
+    buildTopicButtons();
   }
-  if (selectedGrade) enterMainArea();
 
   function topicButtonHtml(t) {
     return `<button type="button" class="topic-btn" data-topic="${t.id}">${escapeHtml(t.label)}</button>`;
   }
-  (function buildTopicButtons() {
+  // only the topics that have questions for the chosen grade are shown
+  function buildTopicButtons() {
+    const available = new Set(topicsFor(selectedGrade));
+    const shown = TOPICS.filter(t => t.id === 'mixed' || available.has(t.id));
     const strands = [];
-    TOPICS.filter(t => t.strand).forEach(t => { if (!strands.includes(t.strand)) strands.push(t.strand); });
+    shown.filter(t => t.strand).forEach(t => { if (!strands.includes(t.strand)) strands.push(t.strand); });
     let html = `<div class="topic-group"><div class="topic-group-buttons">${topicButtonHtml(TOPICS[0])}</div></div>`;
     strands.forEach(s => {
       html += `<div class="topic-group"><div class="topic-group-label">${escapeHtml(s)}</div><div class="topic-group-buttons">` +
-        TOPICS.filter(t => t.strand === s).map(topicButtonHtml).join('') + '</div></div>';
+        shown.filter(t => t.strand === s).map(t => topicButtonHtml(Object.assign({}, t, { label: labelFor(t.id, selectedGrade) }))).join('') + '</div></div>';
     });
     topicButtons.innerHTML = html;
-  })();
-  topicButtons.querySelectorAll('.topic-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      topicButtons.querySelectorAll('.topic-btn').forEach(b => b.classList.toggle('active', b === btn));
-      startSession(btn.dataset.topic);
+    topicButtons.querySelectorAll('.topic-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        topicButtons.querySelectorAll('.topic-btn').forEach(b => b.classList.toggle('active', b === btn));
+        startSession(btn.dataset.topic);
+      });
     });
-  });
+  }
+  if (selectedGrade) enterMainArea();
 
   resetBtn.addEventListener('click', () => {
     stats = { correct: 0, total: 0, streak: 0 };
@@ -4500,7 +6154,7 @@
     emptyState.style.display = 'none';
     problemArea.style.display = 'block';
     summaryArea.style.display = 'none';
-    topicTag.textContent = TOPIC_LABEL[currentProblem.topicId];
+    topicTag.textContent = labelFor(currentProblem.topicId, selectedGrade);
     progressTag.textContent = `Question ${session.index} of ${MAX_QUESTIONS_PER_TOPIC}`;
     questionText.textContent = currentProblem.question;
     if (currentProblem.visual) {
@@ -4525,7 +6179,7 @@
     problemArea.style.display = 'none';
     summaryArea.style.display = 'block';
     summaryScore.textContent = `${session.correct} / ${MAX_QUESTIONS_PER_TOPIC}`;
-    summaryLabel.textContent = `${TOPIC_LABEL[session.topicId]} — nice work!`;
+    summaryLabel.textContent = `${labelFor(session.topicId, selectedGrade)} — nice work!`;
 
     const wrongCount = session.history.length - session.correct;
     document.getElementById('summaryCorrectCount').textContent = session.correct;
@@ -4566,7 +6220,7 @@
     session.history.push({
       question: currentProblem.question,
       visual: currentProblem.visual || '',
-      topicLabel: TOPIC_LABEL[currentProblem.topicId],
+      topicLabel: labelFor(currentProblem.topicId, selectedGrade),
       userAnswer: raw,
       isCorrect,
       correctDisplay: currentProblem.correctDisplay,
